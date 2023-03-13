@@ -9,7 +9,6 @@ import (
 	"github.com/viant/afs/option"
 	"golang.org/x/mod/modfile"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -69,7 +68,7 @@ func (s *Source) Unpack(ctx context.Context, fs afs.Service, destURL string, mod
 
 	if err := fs.Walk(ctx, transientZipURL, func(ctx context.Context, baseURL string, parent string, info os.FileInfo, reader io.Reader) (toContinue bool, err error) {
 		if info.Name() == "go.mod" {
-			modContent, _ := ioutil.ReadAll(reader)
+			modContent, _ := io.ReadAll(reader)
 			aMod, err := modfile.Parse(info.Name(), modContent, nil)
 			if err != nil {
 				return false, err

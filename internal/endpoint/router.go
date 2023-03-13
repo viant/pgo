@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/viant/pgo/build"
 	"github.com/viant/pgo/internal/builder"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -19,7 +19,7 @@ func (s *Router) buildPlugin(writer http.ResponseWriter, request *http.Request) 
 	if request.Method != http.MethodPost {
 		return fmt.Errorf("unsupported method, expected POST, but had: %v", request.Method)
 	}
-	data, err := ioutil.ReadAll(request.Body)
+	data, err := io.ReadAll(request.Body)
 	if err != nil {
 		return err
 	}

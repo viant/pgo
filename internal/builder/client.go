@@ -8,7 +8,7 @@ import (
 	"github.com/viant/afs/url"
 	"github.com/viant/pgo/build"
 	"github.com/viant/pgo/internal"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -27,7 +27,7 @@ func (c *Client) IsUp() bool {
 		return false
 	}
 	defer response.Body.Close()
-	data, _ := ioutil.ReadAll(response.Body)
+	data, _ := io.ReadAll(response.Body)
 	return string(data) == "ok"
 }
 
@@ -50,7 +50,7 @@ func (c *Client) Build(ctx context.Context, buildSpec *build.Build) (*build.Plug
 		return nil, err
 	}
 	defer response.Body.Close()
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/viant/pgo/build"
 	"golang.org/x/mod/modfile"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -97,7 +96,7 @@ func (s *Service) buildPlugin(snapshot *Snapshot, buildSpec *build.Build) error 
 var mainFragment = []byte("package main")
 
 func (s *Service) processSource(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot) (os.FileInfo, io.ReadCloser, error) {
-	source, err := ioutil.ReadAll(reader)
+	source, err := io.ReadAll(reader)
 	if err != nil {
 		return info, reader, err
 	}
@@ -109,7 +108,7 @@ func (s *Service) processSource(reader io.ReadCloser, parent string, info os.Fil
 	if bytes.Contains(source, mainFragment) {
 		snapshot.AppendMain(path.Join(parent, info.Name()))
 	}
-	return info, ioutil.NopCloser(bytes.NewReader(source)), nil
+	return info, io.NopCloser(bytes.NewReader(source)), nil
 }
 
 var goDownloadURL = "https://dl.google.com/go/go%v.%v-%v.tar.gz"
