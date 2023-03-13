@@ -14,7 +14,7 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 
 ## Motivation
 
-The goal of this library is to simplify build and managing GoLang plugins.
+The goal of this library is to simplify build and management GoLang plugins.
 
 Go plugin comes with the following constrains,
 - go version, os and cpu architecture match
