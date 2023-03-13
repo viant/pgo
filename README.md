@@ -30,7 +30,7 @@ NAME_GO_VERSION_GOOS_GOARCH.so
 This project allow you to rebuild the same plugin source and reload it as long there is available memory,
 note that previous loaded plugins stay in memory.
 
-Each plugin is stamped by SCN time based sequence change number which allows to load the newest version of the plugin. 
+Each plugin is stamped by SCN time based sequence change number which allows to load only the newest version of the plugin. 
 
 Time based sequence change number allows application build/design with "initial SCN version", that 
 can be supplemented with plugin above that version.
