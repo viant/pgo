@@ -1,4 +1,4 @@
-# pgo (Flexible GoLang plugin)
+# pgo (Flexible GoLang plugins)
 
 [![GoReportCard](https://goreportcard.com/badge/github.com/viant/pgo)](https://goreportcard.com/report/github.com/viant/pgo)
 [![GoDoc](https://godoc.org/github.com/viant/pgo?status.svg)](https://godoc.org/github.com/viant/pgo)
