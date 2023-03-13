@@ -27,7 +27,7 @@ with this project you can build ahead of time the same plugin for various platfo
 the build plugin uses the following naming:
 NAME_GO_VERSION_GOOS_GOARCH.so
 
-This project allow you to rebuild the same plugin source and reload as long there is available memory,
+This project allow you to rebuild the same plugin source and reload it as long there is available memory,
 note that previous loaded plugins stay in memory.
 
 Each plugin is stamped by SCN time based sequence change number which allows to load the newest version of the plugin. 
