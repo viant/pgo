@@ -1,0 +1,70 @@
+init:
+  appPath: $WorkingDirectory(./../../..)
+  Version: 0.1.0
+  target:
+    URL: ssh://localhost/
+    Credentials: localhost
+
+pipeline:
+  setSdk:
+    target: $target
+    action: sdk:set
+    sdk: go
+    version: 1.17
+  buildBinary:
+    action: exec:run
+    target: $target
+    checkError: true
+    commands:
+      - cd ${appPath}/docker/app
+      - export GOOS=linux
+      - go build -o pgo
+      - mv pgo ../pgo/
+
+  buildImage:
+    action: docker:build
+    path: ${appPath}/docker/pgo
+    nocache: true
+    tag:
+      image: pgo
+      version: ${Version}
+
+  deploy:
+    auth:
+      action: docker:login
+      repository: index.docker.io/viant
+      credentials: dockerHubEndly
+    sync:
+      tagBuildVersion:
+        action: docker:tag
+        sourceTag:
+          image: pgo
+          version: ${Version}
+        targetTag:
+          image: pgo
+          username: viant
+          version: ${Version}
+
+      tagLatestVersion:
+        action: docker:tag
+        sourceTag:
+          image: pgo
+          version: ${Version}
+        targetTag:
+          image: pgo
+          username: viant
+          version: latest
+
+      pushVersion:
+        action: docker:push
+        tag:
+          image: pgo
+          username: viant
+          version: ${Version}
+
+      pushLatestVersion:
+        action: docker:push
+        tag:
+          image: pgo
+          username: viant
+          version: latest
