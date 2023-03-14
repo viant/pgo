@@ -47,6 +47,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		func(mod *modfile.File) {
 			snapshot.AppendMod(mod)
 		},
+
 		func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
 			ext := path.Ext(info.Name())
 			switch ext {
@@ -58,17 +59,15 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 
-	if snapshot.PluginBuildPath == "" {
-		buildSpec.Logf("failed to detect plugin main package\n")
-		return nil, fmt.Errorf("failed to detect plugin main package")
-	}
 	if err = s.buildPlugin(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
+
 	pluginData, err := s.fs.DownloadWithURL(ctx, snapshot.PluginDestPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to locate plugin: %v", err)
 	}
+
 	res := &build.Plugin{
 		Data: pluginData,
 		Info: build.Info{
@@ -80,7 +79,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 }
 
 func (s *Service) buildPlugin(snapshot *Snapshot, buildSpec *build.Build) error {
-	cmd, args := snapshot.buildCmdArgs()
+	cmd, args := snapshot.buildCmdArgs(buildSpec)
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.PluginBuildPath
 	command.Env = snapshot.Env()

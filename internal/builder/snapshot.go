@@ -48,6 +48,17 @@ func (s *Snapshot) BasePluginURL() string {
 	return path.Join(s.BaseDir, "plugin")
 }
 
+func (s *Snapshot) PluginMainURL() string {
+	result := s.BasePluginURL()
+	mainPath := s.PluginSpec.MainPath
+
+	if mainPath != "" {
+		result = path.Join(result, mainPath)
+	}
+
+	return result
+}
+
 //HomeURL returns home dir
 func (s *Snapshot) HomeURL() string {
 	return path.Join(s.TempDir, "home")
@@ -84,6 +95,7 @@ func (s *Snapshot) setPluginBuildPath(loc string) {
 		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
 		return
 	}
+
 	if strings.Contains(loc, s.PluginSpec.MainPath) {
 		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
 	}
@@ -101,11 +113,12 @@ func (s *Snapshot) replaceDependencies(source []byte) ([]byte, error) {
 	return bytes.ReplaceAll(source, []byte(s.PluginSpec.ModPath), []byte(s.BuildModPath)), nil
 }
 
-func (s *Snapshot) buildCmdArgs() (string, []string) {
+func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 	args := []string{
 		"build",
 		"-buildmode=plugin",
 	}
+
 	if len(s.PluginSpec.BuildArgs) > 0 {
 		for _, arg := range s.PluginSpec.BuildArgs {
 			args = append(args, Args(arg).Elements()...)
@@ -114,10 +127,17 @@ func (s *Snapshot) buildCmdArgs() (string, []string) {
 	if s.GoBuild.LdFlags != "" {
 		args = append(args, `-ldflags="`+s.GoBuild.LdFlags+`"`)
 	}
+
 	args = append(args,
 		"-o",
 		s.PluginDestPath,
 	)
+
+	mainPath := buildSpec.Plugin.MainPath
+	if s.PluginBuildPath == "" && mainPath != "" {
+		args = append(args, mainPath)
+	}
+
 	return path.Join(s.GoRoot(), "bin", "go"), args
 }
 
@@ -131,5 +151,6 @@ func NewSnapshot(plugin build.Spec, goBuild build.GoBuild) *Snapshot {
 	_ = os.MkdirAll(ret.GoDir, defaultDirPermission)
 	_ = os.MkdirAll(ret.HomeURL(), defaultDirPermission)
 	ret.PluginDestPath = path.Join(ret.BaseDir, "main.so")
+
 	return ret
 }
