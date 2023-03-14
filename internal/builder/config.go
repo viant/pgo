@@ -21,7 +21,7 @@ type (
 
 //WithLinuxAmd64 create linux amd docker delegation
 func WithLinuxAmd64(c *Config) {
-	delegated := &Delegation{Runtime: build.Runtime{Os: "linux", Arch: "amd64"}, Image: "viant/pgo", Name: "pgo", Port: 8089}
+	delegated := &Delegation{Runtime: build.Runtime{Os: "linux", Arch: "amd64"}, Image: "viant/pgo:latest", Name: "pgo", Port: 8089}
 	c.delegations = append(c.delegations, delegated)
 }
 

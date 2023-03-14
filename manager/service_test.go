@@ -36,7 +36,7 @@ func TestServiceLoad(t *testing.T) {
 	fs := afs.New()
 	initScn := build.AsScn(time.Now())
 	for _, testCase := range testCases {
-		aPlugin, err := aBuilder.Build(ctx, build.New(testCase.sourceURL, cfg.Runtime))
+		aPlugin, err := aBuilder.Build(ctx, build.New(testCase.sourceURL, cfg.Runtime), build.WithLogger(nil))
 		if !assert.Nil(t, err, testCase.description) {
 			continue
 		}
