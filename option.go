@@ -23,7 +23,7 @@ type Options struct {
 }
 
 //Validate check if option are valid
-func (o Options) Validate() error {
+func (o *Options) Validate() error {
 	if o.SourceURL == "" {
 		return fmt.Errorf("sourceURL was empty")
 	}
@@ -52,6 +52,7 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Plugin.ModPath = o.ModPath
 	ret.Plugin.ModPath = o.ModPath
 	ret.Plugin.BuildArgs = o.BuildArgs
+	ret.Plugin.MainPath = o.MainPath
 	return ret
 }
 

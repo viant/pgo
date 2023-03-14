@@ -22,6 +22,7 @@ func (p *Plugin) Store(ctx context.Context, fs afs.Service, location string) err
 	if err := fs.Upload(ctx, dest, file.DefaultFileOsMode, bytes.NewReader(p.Data)); err != nil {
 		return err
 	}
+
 	if info, err := json.Marshal(p.Info); err == nil {
 		if err := fs.Upload(ctx, strings.Replace(dest, ".so", ".info", 1), file.DefaultFileOsMode, bytes.NewReader(info)); err != nil {
 			return err
