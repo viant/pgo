@@ -20,7 +20,7 @@ type Options struct {
 	MainPath   string            `short:"p" long:"mainpath" description:"main path in project"  `
 	BuildArgs  []string          `short:"b" long:"barg" description:"build args" `
 	Env        map[string]string `short:"e" long:"env" description:"env variables" `
-	BuildMod   string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
+	BuildMode  string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
 	WithLogger bool              `short:"l" long:"log" description:"with debug logger" `
 }
 
@@ -64,7 +64,7 @@ func (o *Options) buildSpec() *build.Build {
 	spec.ModPath = o.ModPath
 	spec.BuildArgs = o.BuildArgs
 	spec.MainPath = o.MainPath
-	if o.BuildMod == "exec" {
+	if o.BuildMode == "exec" {
 		ret.Exec = &spec
 	} else {
 		ret.Plugin = &spec
