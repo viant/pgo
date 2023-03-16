@@ -82,7 +82,8 @@ func (s *Service) buildPlugin(snapshot *Snapshot, buildSpec *build.Build) error 
 	cmd, args := snapshot.buildCmdArgs(buildSpec)
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.PluginBuildPath
-	command.Env = snapshot.Env()
+
+	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
 	buildSpec.Logf("building plugin at %v: %v", command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
@@ -90,6 +91,15 @@ func (s *Service) buildPlugin(snapshot *Snapshot, buildSpec *build.Build) error 
 		return fmt.Errorf("couldn't generate plugin due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
 	}
 	return nil
+}
+
+func appendEnv(pairs map[string]string, env []string) []string {
+	if len(pairs) > 0 {
+		for k, v := range pairs {
+			env = append(env, fmt.Sprintf("%v=%v", k, v))
+		}
+	}
+	return env
 }
 
 var mainFragment = []byte("package main")

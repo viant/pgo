@@ -23,6 +23,7 @@ type (
 	GoBuild struct {
 		Runtime
 		LdFlags string
+		Env     map[string]string
 	}
 
 	//Spec represents plygin spec
