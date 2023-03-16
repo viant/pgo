@@ -20,6 +20,9 @@ type Module struct {
 //Store stores plugin in supplied dest
 func (p *Module) Store(ctx context.Context, fs afs.Service, location string) error {
 	if p.Mode == "exec" {
+		if p.Name == "" {
+			p.Name = "main"
+		}
 		dest := url.Join(location, p.Name)
 		return fs.Upload(ctx, dest, file.DefaultFileOsMode, bytes.NewReader(p.Data))
 	}

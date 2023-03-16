@@ -9,6 +9,7 @@ import (
 type (
 	//Build represents build spec
 	Build struct {
+		Name     string
 		Source   Source
 		LocalDep []*Source
 		Plugin   *Spec

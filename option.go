@@ -52,7 +52,7 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Go.Runtime.Version = o.Version
 	ret.Go.Env = o.Env
 	ret.Source.URL = o.SourceURL
-
+	ret.Name = o.Name
 	spec := build.Spec{}
 	spec.ModPath = o.ModPath
 	spec.ModPath = o.ModPath
