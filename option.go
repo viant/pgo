@@ -10,7 +10,7 @@ import (
 
 //Options options
 type Options struct {
-	SourceURL  string            `short:"s" long:"src" description:"plugin source project location"  `
+	SourceURL  []string          `short:"s" long:"src" description:"plugin source project location"  `
 	DestURL    string            `short:"d" long:"dest" description:"plugin dest location"  `
 	Name       string            `short:"n" long:"name" description:"plugin name, default main"  `
 	Arch       string            `short:"a" long:"arch" description:"amd64|arm64"  `
@@ -26,7 +26,7 @@ type Options struct {
 
 //Validate check if option are valid
 func (o *Options) Validate() error {
-	if o.SourceURL == "" {
+	if len(o.SourceURL) == 0 {
 		return fmt.Errorf("sourceURL was empty")
 	}
 	if o.DestURL == "" {
@@ -51,7 +51,13 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Go.Runtime.Arch = o.Arch
 	ret.Go.Runtime.Version = o.Version
 	ret.Go.Env = o.Env
-	ret.Source.URL = o.SourceURL
+
+	if len(o.SourceURL) > 0 {
+		ret.Source.URL = o.SourceURL[0]
+		for i := 1; i < len(o.SourceURL); i++ {
+			ret.LocalDep = append(ret.LocalDep, &build.Source{URL: o.SourceURL[i]})
+		}
+	}
 	ret.Name = o.Name
 	spec := build.Spec{}
 	spec.ModPath = o.ModPath
@@ -71,7 +77,9 @@ func (o *Options) buildSpec() *build.Build {
 
 //Init initialises option
 func (o *Options) Init() {
-	o.SourceURL = normalizeLocation(o.SourceURL)
+	for i := range o.SourceURL {
+		o.SourceURL[i] = normalizeLocation(o.SourceURL[i])
+	}
 	o.DestURL = normalizeLocation(o.DestURL)
 }
 
