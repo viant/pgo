@@ -20,6 +20,7 @@ type Options struct {
 	MainPath   string            `short:"p" long:"mainpath" description:"main path in project"  `
 	BuildArgs  []string          `short:"b" long:"barg" description:"build args" `
 	Env        map[string]string `short:"e" long:"env" description:"env variables" `
+	BuildMod   string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
 	WithLogger bool              `short:"l" long:"log" description:"with debug logger" `
 }
 
@@ -51,10 +52,20 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Go.Runtime.Version = o.Version
 	ret.Go.Env = o.Env
 	ret.Source.URL = o.SourceURL
-	ret.Plugin.ModPath = o.ModPath
-	ret.Plugin.ModPath = o.ModPath
-	ret.Plugin.BuildArgs = o.BuildArgs
-	ret.Plugin.MainPath = o.MainPath
+
+	spec := build.Spec{}
+	spec.ModPath = o.ModPath
+	spec.ModPath = o.ModPath
+	spec.BuildArgs = o.BuildArgs
+	spec.MainPath = o.MainPath
+	if o.BuildMod == "exec" {
+		ret.Exec = &spec
+	} else {
+		ret.Plugin = &spec
+	}
+	if o.Os == "linux" {
+		ret.Go.Runtime.EnsureTheSameOs = true
+	}
 	return ret
 }
 

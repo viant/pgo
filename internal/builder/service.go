@@ -31,7 +31,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil {
+	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil || buildSpec.Go.EnsureTheSameOs {
 		return s.delegateBuildOrFail(ctx, buildSpec, err)
 	}
 	if len(buildSpec.Source.Data) == 0 {
@@ -39,7 +39,8 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 			return nil, err
 		}
 	}
-	snapshot := NewSnapshot(buildSpec.Plugin, buildSpec.Go)
+	buildMode, spec := buildSpec.GetModeWithSpec()
+	snapshot := NewSnapshot(buildMode, spec, buildSpec.Go)
 	if err := s.ensureGo(ctx, snapshot, buildSpec.Go.Version, buildSpec.Logf); err != nil {
 		return nil, err
 	}
@@ -52,7 +53,8 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 			ext := path.Ext(info.Name())
 			switch ext {
 			case ".go", ".mod", ".sum":
-				return s.processSource(reader, parent, info, snapshot)
+
+				return s.processSource(reader, parent, info, snapshot, buildMode == "plugin")
 			}
 			return info, reader, nil
 		}); err != nil {
@@ -104,15 +106,17 @@ func appendEnv(pairs map[string]string, env []string) []string {
 
 var mainFragment = []byte("package main")
 
-func (s *Service) processSource(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot) (os.FileInfo, io.ReadCloser, error) {
+func (s *Service) processSource(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot, replace bool) (os.FileInfo, io.ReadCloser, error) {
 	source, err := io.ReadAll(reader)
 	if err != nil {
 		return info, reader, err
 	}
 	_ = reader.Close()
-	source, err = snapshot.replaceDependencies(source)
-	if err != nil {
-		return info, reader, err
+	if replace {
+		source, err = snapshot.replaceDependencies(source)
+		if err != nil {
+			return info, reader, err
+		}
 	}
 	if bytes.Contains(source, mainFragment) {
 		snapshot.AppendMain(path.Join(parent, info.Name()))
@@ -143,6 +147,7 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 }
 
 func (s *Service) delegateBuildOrFail(ctx context.Context, spec *build.Build, err error) (*build.Plugin, error) {
+	spec.Go.EnsureTheSameOs = false //do not propagate that flag down otherwise infinitive loop
 	delegation := s.cfg.delegations.Match(&spec.Go.Runtime)
 	if delegation == nil {
 		return nil, err

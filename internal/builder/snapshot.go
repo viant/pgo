@@ -16,8 +16,9 @@ const defaultDirPermission = 0o777
 
 //Snapshot represent a plugin snapshot
 type Snapshot struct {
-	Created    time.Time
-	PluginSpec build.Spec
+	Created   time.Time
+	buildMode string
+	Spec      *build.Spec
 	build.GoBuild
 	PluginDestPath  string
 	PluginBuildPath string
@@ -50,7 +51,7 @@ func (s *Snapshot) BasePluginURL() string {
 
 func (s *Snapshot) PluginMainURL() string {
 	result := s.BasePluginURL()
-	mainPath := s.PluginSpec.MainPath
+	mainPath := s.Spec.MainPath
 
 	if mainPath != "" {
 		result = path.Join(result, mainPath)
@@ -74,10 +75,10 @@ func (s *Snapshot) setModFile(file *modfile.File) {
 	if s.ModFile != nil || file.Module == nil {
 		return
 	}
-	if s.PluginSpec.ModPath == "" || s.PluginSpec.ModPath == file.Module.Mod.Path {
+	if s.Spec.ModPath == "" || s.Spec.ModPath == file.Module.Mod.Path {
 		s.ModFile = file
 		s.BuildModPath = file.Module.Mod.Path + "_t" + strconv.Itoa(int(time.Now().UnixMilli()))
-		s.PluginSpec.ModPath = file.Module.Mod.Path
+		s.Spec.ModPath = file.Module.Mod.Path
 	}
 }
 
@@ -91,36 +92,37 @@ func (s *Snapshot) setPluginBuildPath(loc string) {
 	if s.PluginBuildPath != "" {
 		return
 	}
-	if s.PluginSpec.MainPath == "" {
+	if s.Spec.MainPath == "" {
 		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
 		return
 	}
 
-	if strings.Contains(loc, s.PluginSpec.MainPath) {
+	if strings.Contains(loc, s.Spec.MainPath) {
 		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
 	}
 }
 
 func (s *Snapshot) replaceDependencies(source []byte) ([]byte, error) {
-	if s.PluginSpec.ModPath == "" {
+	if s.Spec.ModPath == "" {
 		return source, fmt.Errorf("mod path was empty")
 	}
 
-	if !bytes.Contains(source, []byte(s.PluginSpec.ModPath)) {
+	if !bytes.Contains(source, []byte(s.Spec.ModPath)) {
 		return source, nil
 	}
 	//TODO support for mode locally supplied dependencies with repalce
-	return bytes.ReplaceAll(source, []byte(s.PluginSpec.ModPath), []byte(s.BuildModPath)), nil
+	return bytes.ReplaceAll(source, []byte(s.Spec.ModPath), []byte(s.BuildModPath)), nil
 }
 
 func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 	args := []string{
 		"build",
-		"-buildmode=plugin",
 	}
-
-	if len(s.PluginSpec.BuildArgs) > 0 {
-		for _, arg := range s.PluginSpec.BuildArgs {
+	if s.buildMode != "exec" {
+		args = append(args, "-buildmode=plugin")
+	}
+	if len(s.Spec.BuildArgs) > 0 {
+		for _, arg := range s.Spec.BuildArgs {
 			args = append(args, Args(arg).Elements()...)
 		}
 	}
@@ -133,7 +135,7 @@ func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 		s.PluginDestPath,
 	)
 
-	mainPath := buildSpec.Plugin.MainPath
+	mainPath := s.Spec.MainPath
 	if s.PluginBuildPath == "" && mainPath != "" {
 		args = append(args, mainPath)
 	}
@@ -142,8 +144,8 @@ func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 }
 
 //NewSnapshot creates a snapshot
-func NewSnapshot(plugin build.Spec, goBuild build.GoBuild) *Snapshot {
-	ret := &Snapshot{PluginSpec: plugin, GoBuild: goBuild, Created: time.Now()}
+func NewSnapshot(buildMode string, plugin *build.Spec, goBuild build.GoBuild) *Snapshot {
+	ret := &Snapshot{buildMode: buildMode, Spec: plugin, GoBuild: goBuild, Created: time.Now()}
 	ret.TempDir = os.TempDir()
 	ret.BaseDir = path.Join(ret.TempDir, strconv.Itoa(int(ret.Created.UnixMicro())))
 	_ = os.MkdirAll(ret.BaseDir, defaultDirPermission)

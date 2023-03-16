@@ -11,7 +11,8 @@ type (
 	Build struct {
 		Source   Source
 		LocalDep []*Source
-		Plugin   Spec
+		Plugin   *Spec
+		Exec     *Spec
 		Go       GoBuild
 		logger   func(format string, args ...interface{})
 	}
@@ -62,6 +63,19 @@ func (b *Build) Init() {
 //Validate check if build is valid
 func (b *Build) Validate() error {
 	return b.Go.Validate()
+}
+
+func (b *Build) GetModeWithSpec() (string, *Spec) {
+	buildMode := "plugin"
+	spec := b.Plugin
+	if b.Exec != nil {
+		buildMode = "exec"
+		spec = b.Exec
+	}
+	if spec == nil {
+		spec = &Spec{}
+	}
+	return buildMode, spec
 }
 
 //Init  initialises build
