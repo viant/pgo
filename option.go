@@ -10,16 +10,17 @@ import (
 
 //Options options
 type Options struct {
-	SourceURL  string   `short:"s" long:"src" description:"plugin source project location"  `
-	DestURL    string   `short:"d" long:"dest" description:"plugin dest location"  `
-	Name       string   `short:"n" long:"name" description:"plugin name, default main"  `
-	Arch       string   `short:"a" long:"arch" description:"amd64|arm64"  `
-	Os         string   `short:"o" long:"os" description:"linux|darwin"  `
-	Version    string   `short:"v" long:"ver" description:"go version"  `
-	ModPath    string   `short:"m" long:"modpath" description:"go mod path"  `
-	MainPath   string   `short:"p" long:"mainpath" description:"main path in project"  `
-	BuildArgs  []string `short:"b" long:"barg" description:"build args" `
-	WithLogger bool     `short:"l" long:"log" description:"with debug logger" `
+	SourceURL  string            `short:"s" long:"src" description:"plugin source project location"  `
+	DestURL    string            `short:"d" long:"dest" description:"plugin dest location"  `
+	Name       string            `short:"n" long:"name" description:"plugin name, default main"  `
+	Arch       string            `short:"a" long:"arch" description:"amd64|arm64"  `
+	Os         string            `short:"o" long:"os" description:"linux|darwin"  `
+	Version    string            `short:"v" long:"ver" description:"go version"  `
+	ModPath    string            `short:"m" long:"modpath" description:"go mod path"  `
+	MainPath   string            `short:"p" long:"mainpath" description:"main path in project"  `
+	BuildArgs  []string          `short:"b" long:"barg" description:"build args" `
+	Env        map[string]string `short:"e" long:"env" description:"env variables" `
+	WithLogger bool              `short:"l" long:"log" description:"with debug logger" `
 }
 
 //Validate check if option are valid
@@ -48,6 +49,7 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Go.Runtime.Os = o.Os
 	ret.Go.Runtime.Arch = o.Arch
 	ret.Go.Runtime.Version = o.Version
+	ret.Go.Env = o.Env
 	ret.Source.URL = o.SourceURL
 	ret.Plugin.ModPath = o.ModPath
 	ret.Plugin.ModPath = o.ModPath
