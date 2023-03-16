@@ -1,6 +1,6 @@
 init:
   appPath: $WorkingDirectory(./../../..)
-  Version: 0.4.0
+  Version: 0.5.0
   target:
     URL: ssh://localhost/
     Credentials: localhost
