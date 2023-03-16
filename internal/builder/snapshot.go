@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/viant/pgo/build"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 	"os"
 	"path"
 	"strconv"
@@ -15,25 +16,50 @@ import (
 const defaultDirPermission = 0o777
 
 //Snapshot represent a plugin snapshot
-type Snapshot struct {
-	Created   time.Time
-	buildMode string
-	Spec      *build.Spec
-	build.GoBuild
-	PluginDestPath  string
-	PluginBuildPath string
-	ModFile         *modfile.File
-	BuildModPath    string
-	ModFiles        []*modfile.File
-	Mains           []string
-	BaseDir         string
-	TempDir         string
-	GoDir           string
-}
+type (
+	Snapshot struct {
+		Created   time.Time
+		buildMode string
+		Spec      *build.Spec
+		build.GoBuild
+		ModuleDestPath  string
+		ModuleBuildPath string
+		ModFile         *modfile.File
+		BuildModPath    string
+		ModFiles        []*modfile.File
+		Mains           []string
+		BaseDir         string
+		TempDir         string
+		GoDir           string
+		Dependencies    []*Dependency
+	}
+
+	Dependency struct {
+		Mod       *modfile.File
+		Parent    string
+		ParentSet bool
+		BaseURL   string
+	}
+)
 
 //GoRoot returns go root
 func (s *Snapshot) GoRoot() string {
 	return path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
+}
+
+func (s *Snapshot) MatchDependency(match module.Version) *Dependency {
+	if len(s.Dependencies) == 0 {
+		return nil
+	}
+	for _, candidate := range s.Dependencies {
+		if candidate.Mod == nil {
+			continue
+		}
+		if candidate.Mod.Module.Mod.Path == match.Path {
+			return candidate
+		}
+	}
+	return nil
 }
 
 //Env returns go env
@@ -44,13 +70,18 @@ func (s *Snapshot) Env() []string {
 	return []string{goRootEnv, homeEmv, pathEnv}
 }
 
-//BasePluginURL returns base plugin url
-func (s *Snapshot) BasePluginURL() string {
+//BaseModuleURL returns base plugin url
+func (s *Snapshot) BaseModuleURL() string {
 	return path.Join(s.BaseDir, "plugin")
 }
 
+//BaseDependencyURL returns baseDependency
+func (s *Snapshot) BaseDependencyURL(index int) string {
+	return path.Join(s.BaseDir, fmt.Sprintf("dep%v", index))
+}
+
 func (s *Snapshot) PluginMainURL() string {
-	result := s.BasePluginURL()
+	result := s.BaseModuleURL()
 	mainPath := s.Spec.MainPath
 
 	if mainPath != "" {
@@ -89,16 +120,16 @@ func (s *Snapshot) AppendMain(loc string) {
 }
 
 func (s *Snapshot) setPluginBuildPath(loc string) {
-	if s.PluginBuildPath != "" {
+	if s.ModuleBuildPath != "" {
 		return
 	}
 	if s.Spec.MainPath == "" {
-		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
+		s.ModuleBuildPath = path.Join(s.BaseModuleURL(), path.Dir(loc))
 		return
 	}
 
 	if strings.Contains(loc, s.Spec.MainPath) {
-		s.PluginBuildPath = path.Join(s.BasePluginURL(), path.Dir(loc))
+		s.ModuleBuildPath = path.Join(s.BaseModuleURL(), path.Dir(loc))
 	}
 }
 
@@ -114,7 +145,7 @@ func (s *Snapshot) replaceDependencies(source []byte) ([]byte, error) {
 	return bytes.ReplaceAll(source, []byte(s.Spec.ModPath), []byte(s.BuildModPath)), nil
 }
 
-func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
+func (s *Snapshot) buildCmdArgs() (string, []string) {
 	args := []string{
 		"build",
 	}
@@ -132,11 +163,11 @@ func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 
 	args = append(args,
 		"-o",
-		s.PluginDestPath,
+		s.ModuleDestPath,
 	)
 
 	mainPath := s.Spec.MainPath
-	if s.PluginBuildPath == "" && mainPath != "" {
+	if s.ModuleBuildPath == "" && mainPath != "" {
 		args = append(args, mainPath)
 	}
 
@@ -144,15 +175,18 @@ func (s *Snapshot) buildCmdArgs(buildSpec *build.Build) (string, []string) {
 }
 
 //NewSnapshot creates a snapshot
-func NewSnapshot(buildMode string, plugin *build.Spec, goBuild build.GoBuild) *Snapshot {
-	ret := &Snapshot{buildMode: buildMode, Spec: plugin, GoBuild: goBuild, Created: time.Now()}
+func NewSnapshot(name string, buildMode string, spec *build.Spec, goBuild build.GoBuild) *Snapshot {
+	ret := &Snapshot{buildMode: buildMode, Spec: spec, GoBuild: goBuild, Created: time.Now()}
 	ret.TempDir = os.TempDir()
 	ret.BaseDir = path.Join(ret.TempDir, strconv.Itoa(int(ret.Created.UnixMicro())))
 	_ = os.MkdirAll(ret.BaseDir, defaultDirPermission)
 	ret.GoDir = path.Join(ret.TempDir, "go")
 	_ = os.MkdirAll(ret.GoDir, defaultDirPermission)
 	_ = os.MkdirAll(ret.HomeURL(), defaultDirPermission)
-	ret.PluginDestPath = path.Join(ret.BaseDir, "main.so")
+	if name == "" {
+		name = "main"
+	}
+	ret.ModuleDestPath = path.Join(ret.BaseDir, name)
 
 	return ret
 }

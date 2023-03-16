@@ -31,30 +31,34 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if err != nil {
 		return nil, err
 	}
+	if err = s.packSourceIfNeeded(ctx, buildSpec); err != nil {
+		return nil, err
+	}
 	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil || buildSpec.Go.EnsureTheSameOs {
 		return s.delegateBuildOrFail(ctx, buildSpec, err)
 	}
-	if len(buildSpec.Source.Data) == 0 {
-		if err = buildSpec.Source.Pack(ctx, s.fs); err != nil {
-			return nil, err
-		}
-	}
-	buildMode, spec := buildSpec.GetModeWithSpec()
-	snapshot := NewSnapshot(buildMode, spec, buildSpec.Go)
+
+	snapshot := NewSnapshot(buildSpec.Name, buildSpec.Mode, &buildSpec.Spec, buildSpec.Go)
 	if err := s.ensureGo(ctx, snapshot, buildSpec.Go.Version, buildSpec.Logf); err != nil {
 		return nil, err
 	}
-	if err = buildSpec.Source.Unpack(ctx, s.fs, snapshot.BasePluginURL(),
+	if err = s.unpackDependencies(ctx, buildSpec, snapshot); err != nil {
+		return nil, err
+	}
+	if err = buildSpec.Source.Unpack(ctx, s.fs, snapshot.BaseModuleURL(),
 		func(mod *modfile.File) {
 			snapshot.AppendMod(mod)
 		},
-
 		func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
+			if info.Name() == "go.mod" {
+				if reader, err = s.replaceLocalDependencies(reader, parent, info, snapshot); err != nil {
+					return nil, nil, err
+				}
+			}
 			ext := path.Ext(info.Name())
 			switch ext {
-			case ".go", ".mod", ".sum":
-
-				return s.processSource(reader, parent, info, snapshot, buildMode == "plugin")
+			case ".go", ".sum", ".mod":
+				return s.processSource(reader, parent, info, snapshot, snapshot.buildMode != "exec")
 			}
 			return info, reader, nil
 		}); err != nil {
@@ -65,7 +69,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 
-	data, err := s.fs.DownloadWithURL(ctx, snapshot.PluginDestPath)
+	data, err := s.fs.DownloadWithURL(ctx, snapshot.ModuleDestPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to locate plugin: %v", err)
 	}
@@ -82,17 +86,91 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	return res, nil
 }
 
-func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
-	cmd, args := snapshot.buildCmdArgs(buildSpec)
-	command := exec.Command(cmd, args...)
-	command.Dir = snapshot.PluginBuildPath
+func (s *Service) replaceLocalDependencies(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot) (io.ReadCloser, error) {
+	if len(snapshot.Dependencies) == 0 {
+		return reader, nil
+	}
+	replace := snapshot.ModFile.Replace
+	if len(replace) == 0 {
+		return reader, nil
+	}
+	source, err := io.ReadAll(reader)
+	if err != nil {
+		return reader, err
+	}
+	_ = reader.Close()
+	sourceCode := string(source)
+	for _, item := range replace {
+		dep := snapshot.MatchDependency(item.Old)
+		if dep == nil {
+			continue
+		}
+		elem := []string{dep.BaseURL}
+		if dep.Parent != "" {
+			elem = append(elem, dep.Parent)
+		}
+		newPath := path.Join(elem...)
+		sourceCode = strings.ReplaceAll(sourceCode, item.New.Path, newPath)
+	}
+	return io.NopCloser(strings.NewReader(sourceCode)), nil
+}
 
+//replace github.com/viant/xdatly/types/custom => /Users/awitas/go/src/github.vianttech.com/adelphic/datlydev/pkg
+
+func (s *Service) unpackDependencies(ctx context.Context, buildSpec *build.Build, snapshot *Snapshot) error {
+	if len(buildSpec.LocalDep) > 0 {
+		for i, localDep := range buildSpec.LocalDep {
+			dep := &Dependency{}
+			snapshot.Dependencies = append(snapshot.Dependencies, dep)
+			if err := localDep.Unpack(ctx, s.fs, snapshot.BaseDependencyURL(i),
+				func(mod *modfile.File) {
+					dep.BaseURL = snapshot.BaseDependencyURL(i)
+					if dep.Mod != nil {
+						return
+					}
+					dep.Mod = mod
+				}, func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
+					if info.Name() == "go.mod" && !!dep.ParentSet {
+						dep.ParentSet = true
+						dep.Parent = parent
+					}
+					return info, reader, nil
+				}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Service) packSourceIfNeeded(ctx context.Context, buildSpec *build.Build) error {
+	if len(buildSpec.LocalDep) > 0 {
+		for _, dep := range buildSpec.LocalDep {
+			if len(dep.Data) == 0 {
+				if err := dep.Pack(ctx, s.fs); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if len(buildSpec.Source.Data) == 0 {
+		if err := buildSpec.Source.Pack(ctx, s.fs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
+	cmd, args := snapshot.buildCmdArgs()
+	command := exec.Command(cmd, args...)
+	command.Dir = snapshot.ModuleBuildPath
 	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
-	buildSpec.Logf("building plugin at %v: %v", command.Dir, command.String())
+	buildSpec.Logf("building module at %v: %v", command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
-		buildSpec.Logf("couldn't generate plugin due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
-		return fmt.Errorf("couldn't generate plugin due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
+		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
+		return fmt.Errorf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
 	}
 	return nil
 }

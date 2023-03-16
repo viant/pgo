@@ -12,8 +12,8 @@ type (
 		Name     string
 		Source   Source
 		LocalDep []*Source
-		Plugin   *Spec
-		Exec     *Spec
+		Spec     Spec
+		Mode     string
 		Go       GoBuild
 		logger   func(format string, args ...interface{})
 	}
@@ -59,24 +59,14 @@ func (b *Build) Logf(format string, args ...interface{}) {
 //Init checks if build is valid
 func (b *Build) Init() {
 	b.Go.Init()
+	if b.Mode == "" {
+		b.Mode = "plugin"
+	}
 }
 
 //Validate check if build is valid
 func (b *Build) Validate() error {
 	return b.Go.Validate()
-}
-
-func (b *Build) GetModeWithSpec() (string, *Spec) {
-	buildMode := "plugin"
-	spec := b.Plugin
-	if b.Exec != nil {
-		buildMode = "exec"
-		spec = b.Exec
-	}
-	if spec == nil {
-		spec = &Spec{}
-	}
-	return buildMode, spec
 }
 
 //Init  initialises build
@@ -91,6 +81,7 @@ func (b *GoBuild) Init() {
 	if b.Arch == "" {
 		b.Os = runtime.GOARCH
 	}
+
 }
 
 //Validate validates if go build is valid

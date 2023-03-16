@@ -19,6 +19,7 @@ type Options struct {
 	ModPath    string            `short:"m" long:"modpath" description:"go mod path"  `
 	MainPath   string            `short:"p" long:"mainpath" description:"main path in project"  `
 	BuildArgs  []string          `short:"b" long:"barg" description:"build args" `
+	LdFlags    string            `short:"f" long:"f" description:"ldflags" `
 	Env        map[string]string `short:"e" long:"env" description:"env variables" `
 	BuildMode  string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
 	WithLogger bool              `short:"l" long:"log" description:"with debug logger" `
@@ -59,16 +60,12 @@ func (o *Options) buildSpec() *build.Build {
 		}
 	}
 	ret.Name = o.Name
-	spec := build.Spec{}
-	spec.ModPath = o.ModPath
-	spec.ModPath = o.ModPath
-	spec.BuildArgs = o.BuildArgs
-	spec.MainPath = o.MainPath
-	if o.BuildMode == "exec" {
-		ret.Exec = &spec
-	} else {
-		ret.Plugin = &spec
-	}
+	ret.Spec.ModPath = o.ModPath
+	ret.Spec.ModPath = o.ModPath
+	ret.Spec.BuildArgs = o.BuildArgs
+	ret.Go.LdFlags = o.LdFlags
+	ret.Spec.MainPath = o.MainPath
+	ret.Mode = o.BuildMode
 	if o.Os == "linux" {
 		ret.Go.Runtime.EnsureTheSameOs = true
 	}
