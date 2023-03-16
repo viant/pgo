@@ -15,10 +15,10 @@ func Build(option *Options, opts ...build.Option) error {
 	}
 	var aBuilder = builder.New(&builder.Config{}, builder.WithLinuxAmd64)
 	spec := option.buildSpec()
-	plugin, err := aBuilder.Build(context.Background(), spec, opts...)
+	module, err := aBuilder.Build(context.Background(), spec, opts...)
 	if err != nil {
 		return err
 	}
 	fs := afs.New()
-	return plugin.Store(context.Background(), fs, option.DestURL)
+	return module.Store(context.Background(), fs, option.DestURL)
 }

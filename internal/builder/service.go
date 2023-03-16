@@ -22,7 +22,7 @@ type Service struct {
 }
 
 //Build builds plugin
-func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...build.Option) (*build.Plugin, error) {
+func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...build.Option) (*build.Module, error) {
 	for _, opt := range opts {
 		opt(buildSpec)
 	}
@@ -61,17 +61,18 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 
-	if err = s.buildPlugin(snapshot, buildSpec); err != nil {
+	if err = s.build(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
 
-	pluginData, err := s.fs.DownloadWithURL(ctx, snapshot.PluginDestPath)
+	data, err := s.fs.DownloadWithURL(ctx, snapshot.PluginDestPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to locate plugin: %v", err)
 	}
 
-	res := &build.Plugin{
-		Data: pluginData,
+	res := &build.Module{
+		Mode: snapshot.buildMode,
+		Data: data,
 		Info: build.Info{
 			Scn:     build.AsScn(snapshot.Created),
 			Runtime: buildSpec.Go.Runtime,
@@ -80,7 +81,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	return res, nil
 }
 
-func (s *Service) buildPlugin(snapshot *Snapshot, buildSpec *build.Build) error {
+func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
 	cmd, args := snapshot.buildCmdArgs(buildSpec)
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.PluginBuildPath
@@ -146,7 +147,7 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 	return err
 }
 
-func (s *Service) delegateBuildOrFail(ctx context.Context, spec *build.Build, err error) (*build.Plugin, error) {
+func (s *Service) delegateBuildOrFail(ctx context.Context, spec *build.Build, err error) (*build.Module, error) {
 	spec.Go.EnsureTheSameOs = false //do not propagate that flag down otherwise infinitive loop
 	delegation := s.cfg.delegations.Match(&spec.Go.Runtime)
 	if delegation == nil {

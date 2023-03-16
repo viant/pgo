@@ -32,7 +32,7 @@ func (c *Client) IsUp() bool {
 }
 
 //Build builds plugin
-func (c *Client) Build(ctx context.Context, buildSpec *build.Build) (*build.Plugin, error) {
+func (c *Client) Build(ctx context.Context, buildSpec *build.Build) (*build.Module, error) {
 	buildSpec.Init()
 	if err := buildSpec.Validate(); err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (c *Client) Build(ctx context.Context, buildSpec *build.Build) (*build.Plug
 	if err != nil {
 		return nil, err
 	}
-	ret := &build.Plugin{}
+	ret := &build.Module{}
 	err = json.Unmarshal(data, ret)
 	return ret, err
 }
