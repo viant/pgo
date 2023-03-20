@@ -19,6 +19,7 @@ func Build(option *Options, opts ...build.Option) error {
 	if err != nil {
 		return err
 	}
+	module.Compression = option.Compression
 	fs := afs.New()
 	return module.Store(context.Background(), fs, option.DestURL)
 }

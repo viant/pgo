@@ -7,9 +7,10 @@ import (
 
 //Info represent plugin info
 type Info struct {
-	Name    string
-	Scn     int //sequence change number, time based format YYYYMMDDHHMMSS at utc
-	Runtime Runtime
+	Name        string
+	Scn         int //sequence change number, time based format YYYYMMDDHHMMSS at utc
+	Compression string
+	Runtime     Runtime
 }
 
 //DecodeURL decode info from URL

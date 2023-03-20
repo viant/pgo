@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +10,7 @@ import (
 	"github.com/viant/afs/file"
 	"github.com/viant/afs/url"
 	"github.com/viant/pgo/build"
+	"io"
 	"os"
 	"path"
 	"plugin"
@@ -25,8 +28,25 @@ type Service struct {
 	info    map[string]*build.Info
 }
 
+//OpenWithInfoURL open plugin based on the plugin info URL
+func (s *Service) OpenWithInfoURL(ctx context.Context, URL string) (*plugin.Plugin, error) {
+	info, err := s.loadInfo(ctx, URL)
+	if err != nil {
+		return nil, err
+	}
+	URL = strings.Replace(URL, ".info", ".so", 1)
+	if info.Compression == "gzip" {
+		URL += "gz"
+	}
+	return s.Open(ctx, URL)
+}
+
 //Open open plugin, if plugin is latest server SCN
 func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) {
+	isCompressed := strings.HasSuffix(URL, ".gz")
+	if isCompressed {
+		URL = URL[:len(URL)-3]
+	}
 	prev := s.getPluginInfo(URL)
 	info, err := s.loadInfo(ctx, URL)
 	if err != nil {
@@ -43,11 +63,24 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 	}
 	schema := url.Scheme(URL, file.Scheme)
 	location := url.Path(URL)
-	if schema != file.Scheme {
+	if schema != file.Scheme || info.Compression != "" || isCompressed {
 		location = path.Join(os.TempDir(), strconv.Itoa(info.Scn))
 		_ = os.MkdirAll(location, 0o744)
 		location = path.Join(location, path.Base(URL))
-		if err := s.fs.Copy(ctx, URL, location); err != nil {
+
+		if isCompressed {
+			URL += ".gz"
+			data, err := s.fs.DownloadWithURL(ctx, URL)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load %w; %v", err, URL)
+			}
+			if data, err = gunzip(err, data); err != nil {
+				return nil, fmt.Errorf("failed to unzip %w; %v", err, URL)
+			}
+			if err = s.fs.Upload(ctx, location, file.DefaultFileOsMode, bytes.NewReader(data)); err != nil {
+				return nil, fmt.Errorf("failed upload: %w;  %v to %v", err, URL, location)
+			}
+		} else if err := s.fs.Copy(ctx, URL, location); err != nil {
 			return nil, fmt.Errorf("failed to copy: %w;  %v to %v", err, URL, location)
 		}
 	}
@@ -57,6 +90,18 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 	}
 	s.setPluginInfo(URL, info)
 	return aPlugin, nil
+}
+
+func gunzip(err error, data []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	reader.Close()
+	buf := new(bytes.Buffer)
+	io.Copy(buf, reader)
+	data = buf.Bytes()
+	return data, nil
 }
 
 func (s *Service) getPluginInfo(URL string) *build.Info {
