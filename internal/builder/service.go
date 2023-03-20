@@ -65,6 +65,9 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 
+	if snapshot.buildMode != "exec" {
+		buildSpec.Logf("build module: %s from %s\n", snapshot.BuildModPath, snapshot.Spec.ModPath)
+	}
 	if err = s.build(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
