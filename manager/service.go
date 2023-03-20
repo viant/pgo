@@ -36,7 +36,7 @@ func (s *Service) OpenWithInfoURL(ctx context.Context, URL string) (*plugin.Plug
 	}
 	URL = strings.Replace(URL, ".info", ".so", 1)
 	if info.Compression == "gzip" {
-		URL += "gz"
+		URL += ".gz"
 	}
 	return s.Open(ctx, URL)
 }
@@ -47,6 +47,8 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 	if isCompressed {
 		URL = URL[:len(URL)-3]
 	}
+
+	fmt.Printf("OPERATING ON %v\n", URL)
 	prev := s.getPluginInfo(URL)
 	info, err := s.loadInfo(ctx, URL)
 	if err != nil {
@@ -69,8 +71,7 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 		location = path.Join(location, path.Base(URL))
 
 		if isCompressed {
-			URL += ".gz"
-			data, err := s.fs.DownloadWithURL(ctx, URL)
+			data, err := s.fs.DownloadWithURL(ctx, URL+".gz")
 			if err != nil {
 				return nil, fmt.Errorf("failed to load %w; %v", err, URL)
 			}

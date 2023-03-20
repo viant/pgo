@@ -41,6 +41,7 @@ func TestServiceLoad(t *testing.T) {
 			continue
 		}
 		destPlugin := filepath.Join(serviceTestBase, "dist")
+		aPlugin.Compression = "gzip"
 		err = aPlugin.Store(ctx, fs, destPlugin)
 		if !assert.Nil(t, err, testCase.description) {
 			continue
@@ -48,11 +49,12 @@ func TestServiceLoad(t *testing.T) {
 
 		srv := manager.New(initScn)
 		assert.NotNil(t, srv, testCase.description)
-		pluginName := cfg.Runtime.PluginName("main.so")
-		goPlugin, err := srv.Open(ctx, path.Join(destPlugin, pluginName))
+		infoName := cfg.Runtime.InfoName("main.info")
+		goPlugin, err := srv.OpenWithInfoURL(ctx, path.Join(destPlugin, infoName))
 		if !assert.Nil(t, err, testCase.description) {
 			continue
 		}
+		pluginName := cfg.Runtime.PluginName("main.so.gz")
 		//second time would skip loading the plugin
 		_, err = srv.Open(ctx, path.Join(destPlugin, pluginName))
 		assert.True(t, manager.IsPluginToOld(err))
@@ -69,6 +71,7 @@ func TestServiceLoad(t *testing.T) {
 		if !assert.Nil(t, err, testCase.description) {
 			continue
 		}
+		aPlugin.Compression = "gzip"
 		err = aPlugin.Store(ctx, fs, destPlugin)
 		if !assert.Nil(t, err, testCase.description) {
 			continue
