@@ -80,13 +80,13 @@ import (
 func Example_Open() {
 	
 	var buildTime time.Time
-	var initScn = build.AsScn(buildTime)
+	var initScn = build.NewSequenceChangeNumber(buildTime)
 	srv := manager.New(initScn)
 	runtime := build.NewRuntime()
 	pluginName := runtime.PluginName("main.so")
 	basePluginPath := "/var/some_path"
 	goPlugin, err := srv.Open(context.Background(), path.Join(basePluginPath, pluginName))
-	if manager.IsPluginToOld(err) {
+	if manager.IsPluginOutdated(err) {
 		//plugin not needed, already the newest version is loaded or initial SCN is more recent
 	}
 	if goPlugin != nil {
