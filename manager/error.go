@@ -3,10 +3,10 @@ package manager
 import "errors"
 
 var (
-	errScnToOld = errors.New("plugin scn too old")
+	errScnToOld = errors.New("plugin scn is outdated")
 )
 
-//IsPluginToOld returns true if plugin it too old
-func IsPluginToOld(err error) bool {
+//IsPluginOutdated returns true if plugin it too old
+func IsPluginOutdated(err error) bool {
 	return errScnToOld == err
 }

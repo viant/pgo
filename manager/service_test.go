@@ -57,7 +57,7 @@ func TestServiceLoad(t *testing.T) {
 		pluginName := cfg.Runtime.PluginName("main.so.gz")
 		//second time would skip loading the plugin
 		_, err = srv.Open(ctx, path.Join(destPlugin, pluginName))
-		assert.True(t, manager.IsPluginToOld(err))
+		assert.True(t, manager.IsPluginOutdated(err))
 		value, err := goPlugin.Lookup(testCase.symbolName)
 		if !assert.Nil(t, err, testCase.description) {
 			continue
@@ -94,7 +94,7 @@ func ExampleLoad() {
 	pluginName := runtime.PluginName("main.so")
 	basePluginPath := "/tmp/plugin"
 	goPlugin, err := srv.Open(context.Background(), path.Join(basePluginPath, pluginName))
-	if manager.IsPluginToOld(err) {
+	if manager.IsPluginOutdated(err) {
 		//plugin not needed, already newst version is loaded or initScn is more recent
 	}
 	if goPlugin != nil {
