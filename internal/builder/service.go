@@ -165,12 +165,23 @@ func (s *Service) packSourceIfNeeded(ctx context.Context, buildSpec *build.Build
 }
 
 func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
-	cmd, args := snapshot.buildCmdArgs()
+
+	cmd, args := snapshot.buildGoDownloadCmdArgs()
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.ModuleBuildPath
 	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
-	buildSpec.Logf("building %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
 	output, err := command.CombinedOutput()
+	if err != nil {
+		buildSpec.Logf("sync %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
+		return fmt.Errorf("failed to run: %v\n", command.String())
+	}
+
+	cmd, args = snapshot.buildCmdArgs()
+	command = exec.Command(cmd, args...)
+	command.Dir = snapshot.ModuleBuildPath
+	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
+	buildSpec.Logf("building %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
+	output, err = command.CombinedOutput()
 	if err != nil {
 		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
 		return fmt.Errorf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)

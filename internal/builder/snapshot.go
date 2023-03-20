@@ -174,6 +174,14 @@ func (s *Snapshot) buildCmdArgs() (string, []string) {
 	return path.Join(s.GoRoot(), "bin", "go"), args
 }
 
+func (s *Snapshot) buildGoDownloadCmdArgs() (string, []string) {
+	args := []string{
+		"mod",
+		"download",
+	}
+	return path.Join(s.GoRoot(), "bin", "go"), args
+}
+
 //NewSnapshot creates a snapshot
 func NewSnapshot(name string, buildMode string, spec *build.Spec, goBuild build.GoBuild) *Snapshot {
 	ret := &Snapshot{buildMode: buildMode, Spec: spec, GoBuild: goBuild, Created: time.Now()}
