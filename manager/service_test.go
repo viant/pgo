@@ -49,7 +49,7 @@ func TestServiceLoad(t *testing.T) {
 
 		srv := manager.New(initScn)
 		assert.NotNil(t, srv, testCase.description)
-		infoName := cfg.Runtime.InfoName("main.info")
+		infoName := cfg.Runtime.InfoName("main.pinf")
 		goPlugin, err := srv.OpenWithInfoURL(ctx, path.Join(destPlugin, infoName))
 		if !assert.Nil(t, err, testCase.description) {
 			continue

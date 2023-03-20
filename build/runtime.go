@@ -91,13 +91,13 @@ func (r *Runtime) PluginName(name string) string {
 //PluginName returns runtime specific plugin name
 func (r *Runtime) InfoName(name string) string {
 	if name == "" {
-		name = "main.info"
+		name = "main.pinf"
 	}
 	var adjusted = name
 	if ext := path.Ext(adjusted); ext != "" {
 		adjusted = adjusted[:len(adjusted)-len(ext)]
 	}
-	return adjusted + "_" + strings.ReplaceAll(r.Version, ".", "_") + "_" + r.Os + "_" + r.Arch + ".info"
+	return adjusted + "_" + strings.ReplaceAll(r.Version, ".", "_") + "_" + r.Os + "_" + r.Arch + ".pinf"
 }
 
 //NewRuntime creates a runtime

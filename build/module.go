@@ -33,7 +33,7 @@ func (p *Module) Store(ctx context.Context, fs afs.Service, location string) err
 
 	var err error
 	dest := url.Join(location, p.Runtime.PluginName(p.Name))
-	infoDest := strings.Replace(dest, ".so", ".info", 1)
+	infoDest := strings.Replace(dest, ".so", ".pinf", 1)
 	if p.Compression == "gzip" {
 		if data, err = compressWithGzip(data); err != nil {
 			return err

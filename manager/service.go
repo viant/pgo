@@ -34,7 +34,7 @@ func (s *Service) OpenWithInfoURL(ctx context.Context, URL string) (*plugin.Plug
 	if err != nil {
 		return nil, err
 	}
-	URL = strings.Replace(URL, ".info", ".so", 1)
+	URL = strings.Replace(URL, ".pinf", ".so", 1)
 	if info.Compression == "gzip" {
 		URL += ".gz"
 	}
@@ -47,8 +47,6 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 	if isCompressed {
 		URL = URL[:len(URL)-3]
 	}
-
-	fmt.Printf("OPERATING ON %v\n", URL)
 	prev := s.getPluginInfo(URL)
 	info, err := s.loadInfo(ctx, URL)
 	if err != nil {
@@ -119,7 +117,7 @@ func (s *Service) setPluginInfo(URL string, info *build.Info) {
 }
 
 func (s *Service) loadInfo(ctx context.Context, URL string) (*build.Info, error) {
-	infoData, err := s.fs.DownloadWithURL(ctx, strings.Replace(URL, ".so", ".info", 1))
+	infoData, err := s.fs.DownloadWithURL(ctx, strings.Replace(URL, ".so", ".pinf", 1))
 	if err != nil {
 		return s.decodeURLInfo(ctx, URL)
 	}
