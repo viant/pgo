@@ -65,6 +65,9 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 
+	if snapshot.buildMode != "exec" {
+		buildSpec.Logf("build module: %s from %s\n", snapshot.BuildModPath, snapshot.Spec.ModPath)
+	}
 	if err = s.build(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
@@ -166,7 +169,7 @@ func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.ModuleBuildPath
 	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
-	buildSpec.Logf("building module at %v: %v", command.Dir, command.String())
+	buildSpec.Logf("building %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
 		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
