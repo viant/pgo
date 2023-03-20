@@ -8,7 +8,7 @@ import (
 //Info represent plugin info
 type Info struct {
 	Name        string
-	Scn         int //sequence change number, time based format YYYYMMDDHHMMSS at utc
+	Scn         SequenceChangeNumber //sequence change number, time based format YYYYMMDDHHMMSS at utc
 	Compression string
 	Runtime     Runtime
 }

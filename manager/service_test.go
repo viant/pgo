@@ -34,7 +34,7 @@ func TestServiceLoad(t *testing.T) {
 	aBuilder := builder.New(cfg)
 	ctx := context.Background()
 	fs := afs.New()
-	initScn := build.AsScn(time.Now())
+	initScn := build.NewSequenceChangeNumber(time.Now())
 	for _, testCase := range testCases {
 		aPlugin, err := aBuilder.Build(ctx, build.New(testCase.sourceURL, cfg.Runtime), build.WithLogger(nil))
 		if !assert.Nil(t, err, testCase.description) {
@@ -88,7 +88,7 @@ func TestServiceLoad(t *testing.T) {
 
 func ExampleLoad() {
 	var buildTime time.Time
-	var initScn = build.AsScn(buildTime)
+	var initScn = build.NewSequenceChangeNumber(buildTime)
 	srv := manager.New(initScn)
 	runtime := build.NewRuntime()
 	pluginName := runtime.PluginName("main.so")

@@ -21,7 +21,7 @@ import (
 
 //Service re
 type Service struct {
-	scn     int
+	scn     build.SequenceChangeNumber
 	fs      afs.Service
 	runtime build.Runtime
 	mux     sync.RWMutex
@@ -65,7 +65,7 @@ func (s *Service) Open(ctx context.Context, URL string) (*plugin.Plugin, error) 
 	schema := url.Scheme(URL, file.Scheme)
 	location := url.Path(URL)
 	if schema != file.Scheme || info.Compression != "" || isCompressed {
-		location = path.Join(os.TempDir(), strconv.Itoa(info.Scn))
+		location = path.Join(os.TempDir(), strconv.Itoa(int(info.Scn)))
 		_ = os.MkdirAll(location, 0o744)
 		location = path.Join(location, path.Base(URL))
 
@@ -134,12 +134,12 @@ func (s *Service) decodeURLInfo(ctx context.Context, URL string) (*build.Info, e
 		return nil, err
 	}
 
-	result.Scn = build.AsScn(obj.ModTime())
+	result.Scn = build.NewSequenceChangeNumber(obj.ModTime())
 	return result, nil
 }
 
 //New represents a manager
-func New(scn int) *Service {
+func New(scn build.SequenceChangeNumber) *Service {
 	ret := &Service{scn: scn, info: map[string]*build.Info{}, fs: afs.New()}
 	ret.runtime.Init()
 	return ret

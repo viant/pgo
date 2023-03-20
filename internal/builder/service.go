@@ -78,7 +78,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		Mode: snapshot.buildMode,
 		Data: data,
 		Info: build.Info{
-			Scn:     build.AsScn(snapshot.Created),
+			Scn:     build.NewSequenceChangeNumber(snapshot.Created),
 			Runtime: buildSpec.Go.Runtime,
 			Name:    buildSpec.Name,
 		},
