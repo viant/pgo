@@ -29,16 +29,17 @@ type Service struct {
 }
 
 //OpenWithInfoURL open plugin based on the plugin info URL
-func (s *Service) OpenWithInfoURL(ctx context.Context, URL string) (*plugin.Plugin, error) {
+func (s *Service) OpenWithInfoURL(ctx context.Context, URL string) (*build.Info, *plugin.Plugin, error) {
 	info, err := s.loadInfo(ctx, URL)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	URL = strings.Replace(URL, ".pinf", ".so", 1)
 	if info.Compression == "gzip" {
 		URL += ".gz"
 	}
-	return s.Open(ctx, URL)
+	provider, err := s.Open(ctx, URL)
+	return info, provider, err
 }
 
 //Open open plugin, if plugin is latest server SCN
