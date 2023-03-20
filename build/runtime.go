@@ -62,7 +62,7 @@ func (r *Runtime) Validate(runtime *Runtime) error {
 		return err
 	}
 	if r.Version != runtime.Version {
-		return fmt.Errorf("invalid plugin go version: expected: %v, but had: %v", r.Os, runtime.Version)
+		return fmt.Errorf("invalid plugin go version: expected: %v, but had: %v", r.Version, runtime.Version)
 	}
 	return nil
 }
