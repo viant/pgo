@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -193,7 +194,7 @@ func appendEnv(pairs map[string]string, env []string) []string {
 	return env
 }
 
-var mainFragment = []byte("package main")
+var mainFragment = regexp.MustCompile(`package.+main`)
 
 func (s *Service) processSource(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot, replace bool) (os.FileInfo, io.ReadCloser, error) {
 	source, err := io.ReadAll(reader)
@@ -207,7 +208,7 @@ func (s *Service) processSource(reader io.ReadCloser, parent string, info os.Fil
 			return info, reader, err
 		}
 	}
-	if bytes.Contains(source, mainFragment) {
+	if mainFragment.Match(source) {
 		snapshot.AppendMain(path.Join(parent, info.Name()))
 	}
 	return info, io.NopCloser(bytes.NewReader(source)), nil
