@@ -51,7 +51,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		},
 		func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
 			if info.Name() == "go.mod" {
-				if reader, err = s.replaceLocalDependencies(reader, parent, info, snapshot); err != nil {
+				if reader, err = s.replaceLocalDependencies(reader, snapshot, buildSpec); err != nil {
 					return nil, nil, err
 				}
 			}
@@ -89,7 +89,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	return res, nil
 }
 
-func (s *Service) replaceLocalDependencies(reader io.ReadCloser, parent string, info os.FileInfo, snapshot *Snapshot) (io.ReadCloser, error) {
+func (s *Service) replaceLocalDependencies(reader io.ReadCloser, snapshot *Snapshot, spec *build.Build) (io.ReadCloser, error) {
 	if len(snapshot.Dependencies) == 0 {
 		return reader, nil
 	}
@@ -106,6 +106,7 @@ func (s *Service) replaceLocalDependencies(reader io.ReadCloser, parent string, 
 	for _, item := range replace {
 		dep := snapshot.MatchDependency(item.Old)
 		if dep == nil {
+			spec.Logf("failed to match replace: %v\n", item.Old)
 			continue
 		}
 		elem := []string{dep.BaseURL}
@@ -113,6 +114,7 @@ func (s *Service) replaceLocalDependencies(reader io.ReadCloser, parent string, 
 			elem = append(elem, dep.Parent)
 		}
 		newPath := path.Join(elem...)
+		spec.Logf("replacing mode dep: %v %v\n", item.New.Path, newPath)
 		sourceCode = strings.ReplaceAll(sourceCode, item.New.Path, newPath)
 	}
 	return io.NopCloser(strings.NewReader(sourceCode)), nil
@@ -125,15 +127,18 @@ func (s *Service) unpackDependencies(ctx context.Context, buildSpec *build.Build
 		for i, localDep := range buildSpec.LocalDep {
 			dep := &Dependency{}
 			snapshot.Dependencies = append(snapshot.Dependencies, dep)
-			if err := localDep.Unpack(ctx, s.fs, snapshot.BaseDependencyURL(i),
+			destURL := snapshot.BaseDependencyURL(i)
+			if err := localDep.Unpack(ctx, s.fs, destURL,
 				func(mod *modfile.File) {
-					dep.BaseURL = snapshot.BaseDependencyURL(i)
+					buildSpec.Logf("detected go mod: %v with: %v\n", mod.Module.Mod.String(), destURL)
+					dep.BaseURL = destURL
 					if dep.Mod != nil {
 						return
 					}
 					dep.Mod = mod
 				}, func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
 					if info.Name() == "go.mod" && !!dep.ParentSet {
+						buildSpec.Logf("detected go mod path: (%v) %v\n", parent, info.Name())
 						dep.ParentSet = true
 						dep.Parent = parent
 					}

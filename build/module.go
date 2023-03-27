@@ -54,8 +54,11 @@ func (p *Module) Store(ctx context.Context, fs afs.Service, location string) err
 func compressWithGzip(data []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	writer := gzip.NewWriter(buf)
-	io.Copy(writer, bytes.NewReader(data))
-	if err := writer.Flush(); err != nil {
+	_, err := io.Copy(writer, bytes.NewReader(data))
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+	if err = writer.Flush(); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), writer.Close()
