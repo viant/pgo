@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 )
 
 //Service represents builder service
@@ -216,7 +217,7 @@ var goDownloadURL = "https://dl.google.com/go/go%v.%v-%v.tar.gz"
 
 func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version string, logf func(format string, args ...interface{})) error {
 	verLocation := path.Join(snapshot.GoDir, "go"+version)
-	ok, _ := s.fs.Exists(ctx, path.Join(verLocation, "go"))
+	ok, _ := s.fs.Exists(ctx, path.Join(verLocation, "go/bin/go"))
 	logf("checking binary[%v]: %v\n", ok, verLocation)
 	if ok {
 		return nil
@@ -227,10 +228,16 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 	URL := fmt.Sprintf(goDownloadURL, version, s.cfg.Runtime.Os, s.cfg.Runtime.Arch)
 	URL = strings.Replace(URL, "://", ":", 1) + "/tar://"
 	logf("installing go %v %v %v\n", version, s.cfg.Runtime.Os, s.cfg.Runtime.Arch)
+	logf("source: %v\n", URL)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
 	err := s.fs.Copy(ctx, URL, verLocation)
 	if err != nil {
 		logf("failed to install go %v\n", err)
+	} else {
+		logf("installed: %v\n", URL)
 	}
+
 	return err
 }
 
