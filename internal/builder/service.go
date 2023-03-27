@@ -138,7 +138,7 @@ func (s *Service) unpackDependencies(ctx context.Context, buildSpec *build.Build
 					}
 					dep.Mod = mod
 				}, func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
-					if info.Name() == "go.mod" && !!dep.ParentSet {
+					if info.Name() == "go.mod" && !dep.ParentSet {
 						buildSpec.Logf("detected go mod path: (%v) %v\n", parent, info.Name())
 						dep.ParentSet = true
 						dep.Parent = parent
@@ -235,7 +235,7 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 	if err != nil {
 		logf("failed to install go %v\n", err)
 	} else {
-		logf("installed: %v\n", URL)
+		logf("installed at %v\n", verLocation)
 	}
 
 	return err
