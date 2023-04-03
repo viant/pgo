@@ -230,7 +230,7 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 	URL = strings.Replace(URL, "://", ":", 1) + "/tar://"
 	logf("installing go %v %v %v\n", version, s.cfg.Runtime.Os, s.cfg.Runtime.Arch)
 	logf("source: %v\n", URL)
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 	err := s.fs.Copy(ctx, URL, verLocation)
 	if err != nil {
