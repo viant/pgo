@@ -214,7 +214,7 @@ func (s *Service) processSource(reader io.ReadCloser, parent string, info os.Fil
 	return info, io.NopCloser(bytes.NewReader(source)), nil
 }
 
-var goDownloadURL = "https://dl.google.com/go/go%v.%v-%v.tar.gz"
+var goDownloadURL = "https://go.dev/dl/go%v.%v-%v.tar.gz"
 
 func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version string, logf func(format string, args ...interface{})) error {
 	verLocation := path.Join(snapshot.GoDir, "go"+version)
