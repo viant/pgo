@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/stretchr/testify v1.8.2
-	github.com/viant/afs v1.19.0
+	github.com/viant/afs v1.24.2
 	golang.org/x/mod v0.9.0
 )
 
