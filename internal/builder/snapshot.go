@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/viant/pgo/build"
 	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/module"
 	"os"
 	"path"
 	"strconv"
@@ -39,6 +38,7 @@ type (
 		Parent    string
 		ParentSet bool
 		BaseURL   string
+		OriginURL string
 	}
 )
 
@@ -47,7 +47,7 @@ func (s *Snapshot) GoRoot() string {
 	return path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
 }
 
-func (s *Snapshot) MatchDependency(match module.Version) *Dependency {
+func (s *Snapshot) MatchDependency(match *modfile.Replace) *Dependency {
 	if len(s.Dependencies) == 0 {
 		return nil
 	}
@@ -55,7 +55,7 @@ func (s *Snapshot) MatchDependency(match module.Version) *Dependency {
 		if candidate.Mod == nil {
 			continue
 		}
-		if candidate.Mod.Module.Mod.Path == match.Path {
+		if candidate.Mod.Module.Mod.Path == match.Old.Path || match.New.Path == candidate.OriginURL {
 			return candidate
 		}
 	}

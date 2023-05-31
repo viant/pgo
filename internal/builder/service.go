@@ -47,9 +47,12 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if err = s.unpackDependencies(ctx, buildSpec, snapshot); err != nil {
 		return nil, err
 	}
+
 	if err = buildSpec.Source.Unpack(ctx, s.fs, snapshot.BaseModuleURL(),
 		func(mod *modfile.File) {
-			snapshot.AppendMod(mod)
+			if strings.Contains(mod.Module.Mod.Path, buildSpec.Name) {
+				snapshot.AppendMod(mod)
+			}
 		},
 		func(parent string, info os.FileInfo, reader io.ReadCloser) (os.FileInfo, io.ReadCloser, error) {
 			if info.Name() == "go.mod" {
@@ -92,10 +95,14 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 }
 
 func (s *Service) replaceLocalDependencies(reader io.ReadCloser, snapshot *Snapshot, spec *build.Build) (io.ReadCloser, error) {
+	return s.replaceDependencies(reader, snapshot.ModFile, snapshot, spec)
+}
+
+func (s *Service) replaceDependencies(reader io.ReadCloser, dest *modfile.File, snapshot *Snapshot, spec *build.Build) (io.ReadCloser, error) {
 	if len(snapshot.Dependencies) == 0 {
 		return reader, nil
 	}
-	replace := snapshot.ModFile.Replace
+	replace := dest.Replace
 	if len(replace) == 0 {
 		return reader, nil
 	}
@@ -106,7 +113,7 @@ func (s *Service) replaceLocalDependencies(reader io.ReadCloser, snapshot *Snaps
 	_ = reader.Close()
 	sourceCode := string(source)
 	for _, item := range replace {
-		dep := snapshot.MatchDependency(item.Old)
+		dep := snapshot.MatchDependency(item)
 		if dep == nil {
 			spec.Logf("failed to match replace: %v\n", item.Old)
 			continue
@@ -127,7 +134,9 @@ func (s *Service) replaceLocalDependencies(reader io.ReadCloser, snapshot *Snaps
 func (s *Service) unpackDependencies(ctx context.Context, buildSpec *build.Build, snapshot *Snapshot) error {
 	if len(buildSpec.LocalDep) > 0 {
 		for i, localDep := range buildSpec.LocalDep {
-			dep := &Dependency{}
+			dep := &Dependency{
+				OriginURL: localDep.URL,
+			}
 			snapshot.Dependencies = append(snapshot.Dependencies, dep)
 			destURL := snapshot.BaseDependencyURL(i)
 			if err := localDep.Unpack(ctx, s.fs, destURL,
@@ -143,6 +152,14 @@ func (s *Service) unpackDependencies(ctx context.Context, buildSpec *build.Build
 						buildSpec.Logf("detected go mod path: (%v) %v\n", parent, info.Name())
 						dep.ParentSet = true
 						dep.Parent = parent
+						content, err := io.ReadAll(reader)
+						aMod, err := modfile.Parse(info.Name(), content, nil)
+						if err != nil {
+							return nil, nil, err
+						}
+						ioReader := bytes.NewReader(content)
+						reader, err = s.replaceDependencies(io.NopCloser(ioReader), aMod, snapshot, buildSpec)
+						return info, reader, err
 					}
 					return info, reader, nil
 				}); err != nil {
@@ -176,11 +193,16 @@ func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
 	command := exec.Command(cmd, args...)
 	command.Dir = snapshot.ModuleBuildPath
 	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
+
+	if len(snapshot.Dependencies) > 0 {
+		depModule := snapshot.Dependencies[0].Mod.Module.Mod.Path
+		command.Env = append(command.Env, fmt.Sprintf("GOPRIVATE=%s/*", depModule))
+	}
 	buildSpec.Logf("building %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
-		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
-		return fmt.Errorf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s", err, command.Dir, command.String(), output)
+		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v\n", err, command.Dir, command.String(), output, command.Env)
+		return fmt.Errorf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v", err, command.Dir, command.String(), output, command.Env)
 	}
 	return nil
 }
