@@ -66,7 +66,7 @@ func (s *Source) Unpack(ctx context.Context, fs afs.Service, destURL string, mod
 	}
 	transientZipURL := s.transientZipURL(transientURL)
 
-	if err := fs.Walk(ctx, transientZipURL, func(ctx context.Context, baseURL string, parent string, info os.FileInfo, reader io.Reader) (toContinue bool, err error) {
+	err := fs.Walk(ctx, transientZipURL, func(ctx context.Context, baseURL string, parent string, info os.FileInfo, reader io.Reader) (toContinue bool, err error) {
 		if info.Name() == "go.mod" {
 			modContent, _ := io.ReadAll(reader)
 			aMod, err := modfile.Parse(info.Name(), modContent, nil)
@@ -75,8 +75,10 @@ func (s *Source) Unpack(ctx context.Context, fs afs.Service, destURL string, mod
 			}
 			modHandler(aMod)
 		}
+
 		return true, nil
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -89,7 +91,7 @@ func (s *Source) transientURL() string {
 }
 
 func (s *Source) transientPath() string {
-	nanoTimestamp := int(time.Now().UnixMilli())
+	nanoTimestamp := int(time.Now().UnixNano())
 	return transientPath + strconv.Itoa(nanoTimestamp)
 }
 

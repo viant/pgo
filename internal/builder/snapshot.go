@@ -127,7 +127,6 @@ func (s *Snapshot) setPluginBuildPath(loc string) {
 		s.ModuleBuildPath = path.Join(s.BaseModuleURL(), path.Dir(loc))
 		return
 	}
-	fmt.Printf("adding mian location: %v\n", loc)
 	if strings.Contains(loc, s.Spec.MainPath) {
 		fmt.Printf("matched mainPath: %v %v\n", s.Spec.MainPath, loc)
 		s.ModuleBuildPath = path.Join(s.BaseModuleURL(), path.Dir(loc))

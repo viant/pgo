@@ -73,6 +73,9 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if snapshot.buildMode != "exec" {
 		buildSpec.Logf("build module: %s from %s\n", snapshot.BuildModPath, snapshot.Spec.ModPath)
 	}
+	if snapshot.ModuleBuildPath == "" {
+		return nil, fmt.Errorf("unable to locate main package for '%s'", buildSpec.Spec.MainPath)
+	}
 	if err = s.build(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
@@ -198,7 +201,7 @@ func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
 		depModule := snapshot.Dependencies[0].Mod.Module.Mod.Path
 		command.Env = append(command.Env, fmt.Sprintf("GOPRIVATE=%s/*", depModule))
 	}
-	buildSpec.Logf("building %v module at %v: %v", snapshot.buildMode, command.Dir, command.String())
+	buildSpec.Logf("building %v module at '%v': %v", snapshot.buildMode, command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
 		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v\n", err, command.Dir, command.String(), output, command.Env)
