@@ -73,9 +73,6 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if snapshot.buildMode != "exec" {
 		buildSpec.Logf("build module: %s from %s\n", snapshot.BuildModPath, snapshot.Spec.ModPath)
 	}
-	if snapshot.ModuleBuildPath == "" {
-		return nil, fmt.Errorf("unable to locate main package for '%s'", buildSpec.Spec.MainPath)
-	}
 	if err = s.build(snapshot, buildSpec); err != nil {
 		return nil, err
 	}
