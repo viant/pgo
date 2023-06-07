@@ -66,8 +66,9 @@ func (s *Snapshot) MatchDependency(match *modfile.Replace) *Dependency {
 func (s *Snapshot) Env() []string {
 	goRootEnv := "GOROOT=" + path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
 	homeEmv := "HOME=" + s.HomeURL()
+	goPath := "GOPATH=" + path.Join(s.HomeURL(), "go")
 	pathEnv := "PATH=/usr/bin:/usr/local/bin:/bin:/sbin:/usr/sbin"
-	return []string{goRootEnv, homeEmv, pathEnv}
+	return []string{goRootEnv, homeEmv, pathEnv, goPath}
 }
 
 //BaseModuleURL returns base plugin url
@@ -143,6 +144,12 @@ func (s *Snapshot) replaceDependencies(source []byte) ([]byte, error) {
 	}
 	//TODO support for mode locally supplied dependencies with repalce
 	return bytes.ReplaceAll(source, []byte(s.Spec.ModPath), []byte(s.BuildModPath)), nil
+}
+
+func (s *Snapshot) tidyCmdArgs() (string, []string) {
+	return path.Join(s.GoRoot(), "bin", "go"), []string{
+		"mod", "tidy", "-compat=1.17",
+	}
 }
 
 func (s *Snapshot) buildCmdArgs() (string, []string) {

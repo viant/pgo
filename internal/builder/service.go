@@ -189,8 +189,23 @@ func (s *Service) packSourceIfNeeded(ctx context.Context, buildSpec *build.Build
 }
 
 func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
+	tidyCmd, args := snapshot.tidyCmdArgs()
+	tidyCommand := exec.Command(tidyCmd, args...)
+	err := s.execCmd(snapshot, buildSpec, tidyCommand)
+	if err != nil {
+		return err
+	}
+
 	cmd, args := snapshot.buildCmdArgs()
 	command := exec.Command(cmd, args...)
+	err = s.execCmd(snapshot, buildSpec, command)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) execCmd(snapshot *Snapshot, buildSpec *build.Build, command *exec.Cmd) error {
 	command.Dir = snapshot.ModuleBuildPath
 	command.Env = appendEnv(buildSpec.Go.Env, snapshot.Env())
 
@@ -198,11 +213,11 @@ func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
 		depModule := snapshot.Dependencies[0].Mod.Module.Mod.Path
 		command.Env = append(command.Env, fmt.Sprintf("GOPRIVATE=%s/*", depModule))
 	}
-	buildSpec.Logf("building %v module at '%v': %v", snapshot.buildMode, command.Dir, command.String())
+	buildSpec.Logf("%v %v module at '%v': %v", command.Args, snapshot.buildMode, command.Dir, command.String())
 	output, err := command.CombinedOutput()
 	if err != nil {
-		buildSpec.Logf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v\n", err, command.Dir, command.String(), output, command.Env)
-		return fmt.Errorf("couldn't generate module due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v", err, command.Dir, command.String(), output, command.Env)
+		buildSpec.Logf("failed to exec command: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v\n", err, command.Dir, command.String(), output, command.Env)
+		return fmt.Errorf("failed to exec command due to the: %w at: %s\n\tstdin: %s\n\tstdount: %s,\n\tenv: %v", err, command.Dir, command.String(), output, command.Env)
 	}
 	return nil
 }
