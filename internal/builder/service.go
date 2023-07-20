@@ -16,14 +16,14 @@ import (
 	"time"
 )
 
-//Service represents builder service
+// Service represents builder service
 type Service struct {
 	cfg    *Config
 	fs     afs.Service
 	logger func(template string, args ...interface{})
 }
 
-//Build builds plugin
+// Build builds plugin
 func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...build.Option) (*build.Module, error) {
 	for _, opt := range opts {
 		opt(buildSpec)
@@ -189,16 +189,18 @@ func (s *Service) packSourceIfNeeded(ctx context.Context, buildSpec *build.Build
 }
 
 func (s *Service) build(snapshot *Snapshot, buildSpec *build.Build) error {
-	tidyCmd, args := snapshot.tidyCmdArgs()
-	tidyCommand := exec.Command(tidyCmd, args...)
-	err := s.execCmd(snapshot, buildSpec, tidyCommand)
-	if err != nil {
-		return err
+	if snapshot.BuildModPath != "" {
+		tidyCmd, args := snapshot.tidyCmdArgs()
+		tidyCommand := exec.Command(tidyCmd, args...)
+		err := s.execCmd(snapshot, buildSpec, tidyCommand)
+		if err != nil {
+			return err
+		}
 	}
 
 	cmd, args := snapshot.buildCmdArgs()
 	command := exec.Command(cmd, args...)
-	err = s.execCmd(snapshot, buildSpec, command)
+	err := s.execCmd(snapshot, buildSpec, command)
 	if err != nil {
 		return err
 	}
@@ -239,15 +241,17 @@ func (s *Service) processSource(reader io.ReadCloser, parent string, info os.Fil
 		return info, reader, err
 	}
 	_ = reader.Close()
-	if replace {
-		source, err = snapshot.replaceDependencies(source)
-		if err != nil {
-			return info, reader, err
-		}
-	}
+
 	if mainFragment.Match(source) {
 		snapshot.AppendMain(path.Join(parent, info.Name()))
 	}
+	if replace && snapshot.ModFile != nil {
+		source, err = snapshot.replaceDependencies(source)
+		if err != nil {
+			return info, reader, nil
+		}
+	}
+
 	return info, io.NopCloser(bytes.NewReader(source)), nil
 }
 
@@ -301,7 +305,7 @@ func (s *Service) ensureDocker(delegation *Delegation, spec *build.Build) error 
 	return s.runDocker(delegation, spec)
 }
 
-//New creates a service
+// New creates a service
 func New(cfg *Config, opts ...Option) *Service {
 	cfg.Runtime.Init()
 	for _, opt := range opts {

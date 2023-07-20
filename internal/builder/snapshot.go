@@ -14,7 +14,7 @@ import (
 
 const defaultDirPermission = 0o777
 
-//Snapshot represent a plugin snapshot
+// Snapshot represent a plugin snapshot
 type (
 	Snapshot struct {
 		Created   time.Time
@@ -42,7 +42,7 @@ type (
 	}
 )
 
-//GoRoot returns go root
+// GoRoot returns go root
 func (s *Snapshot) GoRoot() string {
 	return path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
 }
@@ -62,7 +62,7 @@ func (s *Snapshot) MatchDependency(match *modfile.Replace) *Dependency {
 	return nil
 }
 
-//Env returns go env
+// Env returns go env
 func (s *Snapshot) Env() []string {
 	goRootEnv := "GOROOT=" + path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
 	homeEmv := "HOME=" + s.HomeURL()
@@ -71,12 +71,12 @@ func (s *Snapshot) Env() []string {
 	return []string{goRootEnv, homeEmv, pathEnv, goPath}
 }
 
-//BaseModuleURL returns base plugin url
+// BaseModuleURL returns base plugin url
 func (s *Snapshot) BaseModuleURL() string {
 	return path.Join(s.BaseDir, "plugin")
 }
 
-//BaseDependencyURL returns baseDependency
+// BaseDependencyURL returns baseDependency
 func (s *Snapshot) BaseDependencyURL(index int) string {
 	return path.Join(s.BaseDir, fmt.Sprintf("dep%v", index))
 }
@@ -92,12 +92,12 @@ func (s *Snapshot) PluginMainURL() string {
 	return result
 }
 
-//HomeURL returns home dir
+// HomeURL returns home dir
 func (s *Snapshot) HomeURL() string {
 	return path.Join(s.TempDir, "home")
 }
 
-//AppendMod append mod file
+// AppendMod append mod file
 func (s *Snapshot) AppendMod(file *modfile.File) {
 	s.ModFiles = append(s.ModFiles, file)
 	s.setModFile(file)
@@ -114,7 +114,7 @@ func (s *Snapshot) setModFile(file *modfile.File) {
 	}
 }
 
-//AppendMain append main files
+// AppendMain append main files
 func (s *Snapshot) AppendMain(loc string) {
 	s.Mains = append(s.Mains, loc)
 	s.setPluginBuildPath(loc)
@@ -174,7 +174,9 @@ func (s *Snapshot) buildCmdArgs() (string, []string) {
 	)
 
 	mainPath := s.Spec.MainPath
-	if s.ModuleBuildPath == "" && mainPath != "" {
+	if s.BuildModPath == "" && len(s.Mains) > 0 {
+		args = append(args, s.Mains[0])
+	} else if s.ModuleBuildPath == "" && mainPath != "" {
 		args = append(args, mainPath)
 	}
 
@@ -189,7 +191,7 @@ func (s *Snapshot) buildGoDownloadCmdArgs() (string, []string) {
 	return path.Join(s.GoRoot(), "bin", "go"), args
 }
 
-//NewSnapshot creates a snapshot
+// NewSnapshot creates a snapshot
 func NewSnapshot(name string, buildMode string, spec *build.Spec, goBuild build.GoBuild) *Snapshot {
 	ret := &Snapshot{buildMode: buildMode, Spec: spec, GoBuild: goBuild, Created: time.Now()}
 	ret.TempDir = os.TempDir()
