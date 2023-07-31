@@ -165,7 +165,7 @@ func (s *Snapshot) buildCmdArgs() (string, []string) {
 		}
 	}
 	if s.GoBuild.LdFlags != "" {
-		args = append(args, `-ldflags="`+s.GoBuild.LdFlags+`"`)
+		args = append(args, `-ldflags=`+s.GoBuild.LdFlags)
 	}
 
 	args = append(args,
