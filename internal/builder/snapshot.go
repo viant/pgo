@@ -148,7 +148,7 @@ func (s *Snapshot) replaceDependencies(source []byte) ([]byte, error) {
 
 func (s *Snapshot) tidyCmdArgs() (string, []string) {
 	return path.Join(s.GoRoot(), "bin", "go"), []string{
-		"mod", "tidy", "-compat=1.17",
+		"mod", "tidy",
 	}
 }
 
