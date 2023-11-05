@@ -30,6 +30,8 @@ type (
 		BaseDir         string
 		TempDir         string
 		GoDir           string
+		goRoot          string
+		GoPath          string
 		Dependencies    []*Dependency
 	}
 
@@ -44,6 +46,9 @@ type (
 
 // GoRoot returns go root
 func (s *Snapshot) GoRoot() string {
+	if s.goRoot != "" {
+		return s.goRoot
+	}
 	return path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
 }
 
@@ -64,11 +69,15 @@ func (s *Snapshot) MatchDependency(match *modfile.Replace) *Dependency {
 
 // Env returns go env
 func (s *Snapshot) Env() []string {
-	goRootEnv := "GOROOT=" + path.Join(s.GoDir, "go"+s.GoBuild.Version, "go")
+	goRootEnv := "GOROOT=" + s.GoRoot()
 	homeEmv := "HOME=" + s.HomeURL()
-	goPath := "GOPATH=" + path.Join(s.HomeURL(), "go")
+	goPath := s.GoPath
+	if goPath == "" {
+		goPath = path.Join(s.HomeURL(), "go")
+	}
+	goPathEnv := "GOPATH=" + goPath
 	pathEnv := "PATH=/usr/bin:/usr/local/bin:/bin:/sbin:/usr/sbin"
-	return []string{goRootEnv, homeEmv, pathEnv, goPath}
+	return []string{goRootEnv, homeEmv, pathEnv, goPathEnv}
 }
 
 // BaseModuleURL returns base plugin url
@@ -197,6 +206,13 @@ func NewSnapshot(name string, buildMode string, spec *build.Spec, goBuild build.
 	ret.TempDir = os.TempDir()
 	ret.BaseDir = path.Join(ret.TempDir, strconv.Itoa(int(ret.Created.UnixMicro())))
 	_ = os.MkdirAll(ret.BaseDir, defaultDirPermission)
+
+	if goBuild.Root != "" {
+		ret.goRoot = goBuild.Root
+	}
+	if goBuild.Path != "" {
+		ret.GoPath = goBuild.Path
+	}
 	ret.GoDir = path.Join(ret.TempDir, "go")
 	_ = os.MkdirAll(ret.GoDir, defaultDirPermission)
 	_ = os.MkdirAll(ret.HomeURL(), defaultDirPermission)
