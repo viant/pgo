@@ -1,7 +1,9 @@
 package build
 
 import (
+	"context"
 	"fmt"
+	"github.com/viant/afs"
 	"log"
 	"runtime"
 )
@@ -26,6 +28,8 @@ type (
 		Runtime
 		LdFlags string
 		Env     map[string]string
+		Path    string
+		Root    string
 	}
 
 	//Spec represents plygin spec
@@ -36,7 +40,7 @@ type (
 	}
 )
 
-//WithLogger create logger build option
+// WithLogger create logger build option
 func WithLogger(printer func(format string, args ...interface{})) func(b *Build) {
 	if printer == nil {
 		printer = log.Printf
@@ -48,7 +52,7 @@ func WithLogger(printer func(format string, args ...interface{})) func(b *Build)
 	}
 }
 
-//Logf logs
+// Logf logs
 func (b *Build) Logf(format string, args ...interface{}) {
 	if b.logger == nil {
 		return
@@ -56,7 +60,7 @@ func (b *Build) Logf(format string, args ...interface{}) {
 	b.logger(format, args...)
 }
 
-//Init checks if build is valid
+// Init checks if build is valid
 func (b *Build) Init() {
 	b.Go.Init()
 	if b.Mode == "" {
@@ -64,12 +68,12 @@ func (b *Build) Init() {
 	}
 }
 
-//Validate check if build is valid
+// Validate check if build is valid
 func (b *Build) Validate() error {
 	return b.Go.Validate()
 }
 
-//Init  initialises build
+// Init  initialises build
 func (b *GoBuild) Init() {
 	if b == nil {
 		return
@@ -84,15 +88,21 @@ func (b *GoBuild) Init() {
 
 }
 
-//Validate validates if go build is valid
+// Validate validates if go build is valid
 func (b *GoBuild) Validate() error {
 	if b.Version == "" {
 		return fmt.Errorf("go.Version was empty")
 	}
+	fs := afs.New()
+	if b.Root != "" {
+		if ok, _ := fs.Exists(context.Background(), b.Root); !ok {
+			return fmt.Errorf("GOROOT does not exists")
+		}
+	}
 	return nil
 }
 
-//New creates build options
+// New creates build options
 func New(URL string, runtime Runtime, opts ...Option) *Build {
 	ret := &Build{}
 	ret.Source.URL = URL

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//Options options
+// Options options
 type Options struct {
 	SourceURL   []string          `short:"s" long:"src" description:"plugin source project location"  `
 	DestURL     string            `short:"d" long:"dest" description:"plugin dest location"  `
@@ -24,9 +24,11 @@ type Options struct {
 	BuildMode   string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
 	Compression string            `short:"c" long:"compression" description:"compression codec" choice:"gzip"  `
 	WithLogger  bool              `short:"l" long:"log" description:"with debug logger" `
+	GoPath      string            `short:"p" long:"gopath" description:"go path" `
+	GoRoot      string            `short:"r" long:"goroot" description:"go root" `
 }
 
-//Validate check if option are valid
+// Validate check if option are valid
 func (o *Options) Validate() error {
 	if len(o.SourceURL) == 0 {
 		return fmt.Errorf("sourceURL was empty")
@@ -43,16 +45,19 @@ func (o *Options) Validate() error {
 	if o.Os == "" {
 		return fmt.Errorf("os was empty")
 	}
+
 	return nil
 }
 
-//buildSpec return build.Build specification
+// buildSpec return build.Build specification
 func (o *Options) buildSpec() *build.Build {
 	ret := &build.Build{}
 	ret.Go.Runtime.Os = o.Os
 	ret.Go.Runtime.Arch = o.Arch
 	ret.Go.Runtime.Version = o.Version
 	ret.Go.Env = o.Env
+	ret.Go.Root = o.GoRoot
+	ret.Go.Path = o.GoPath
 
 	if len(o.SourceURL) > 0 {
 		ret.Source.URL = o.SourceURL[0]
@@ -73,7 +78,7 @@ func (o *Options) buildSpec() *build.Build {
 	return ret
 }
 
-//Init initialises option
+// Init initialises option
 func (o *Options) Init() {
 	for i := range o.SourceURL {
 		o.SourceURL[i] = normalizeLocation(o.SourceURL[i])

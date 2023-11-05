@@ -37,10 +37,13 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 		return nil, err
 	}
 	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil || buildSpec.Go.EnsureTheSameOs {
+		buildSpec.Go.Path = ""
+		buildSpec.Go.Root = ""
 		return s.delegateBuildOrFail(ctx, buildSpec, err)
 	}
 
 	snapshot := NewSnapshot(buildSpec.Name, buildSpec.Mode, &buildSpec.Spec, buildSpec.Go)
+
 	if err := s.ensureGo(ctx, snapshot, buildSpec.Go.Version, buildSpec.Logf); err != nil {
 		return nil, err
 	}
@@ -258,6 +261,10 @@ func (s *Service) processSource(reader io.ReadCloser, parent string, info os.Fil
 var goDownloadURL = "https://go.dev/dl/go%v.%v-%v.tar.gz"
 
 func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version string, logf func(format string, args ...interface{})) error {
+	goExecutablePath := path.Join(snapshot.GoRoot(), "bin/go")
+	if ok, _ := s.fs.Exists(ctx, goExecutablePath); ok {
+		return nil
+	}
 	verLocation := path.Join(snapshot.GoDir, "go"+version)
 	ok, _ := s.fs.Exists(ctx, path.Join(verLocation, "go/bin/go"))
 	logf("checking binary[%v]: %v\n", ok, verLocation)
@@ -279,7 +286,6 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 	} else {
 		logf("installed at %v\n", verLocation)
 	}
-
 	return err
 }
 
