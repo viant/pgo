@@ -8,7 +8,7 @@ import (
 	"path"
 )
 
-//Delegation represents a delegation
+// Delegation represents a delegation
 type Delegation struct {
 	build.Runtime
 	Name  string
@@ -50,6 +50,7 @@ func (d *Delegation) buildDockerRunCmdArgs(dockerCustomPath string) (string, []s
 		"--platform", fmt.Sprintf("%v/%v", d.Os, d.Arch),
 		"-p", fmt.Sprintf("%v:%v", d.Port, d.Port),
 		d.Image)
+	fmt.Printf("%v %v\n", cmd, args)
 	return cmd, args, nil
 }
 
@@ -62,7 +63,7 @@ func (d *Delegation) buildDockerStartCmdArgs(dockerCustomPath string) (string, [
 	return cmd, args, nil
 }
 
-//Match matches delegation with supplied runtime
+// Match matches delegation with supplied runtime
 func (d Delegations) Match(runtime *build.Runtime) *Delegation {
 	if d == nil || len(d) == 0 {
 		return nil

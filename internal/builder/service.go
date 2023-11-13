@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/viant/afs"
 	"github.com/viant/pgo/build"
@@ -28,11 +29,14 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	for _, opt := range opts {
 		opt(buildSpec)
 	}
+
 	buildSpec.Init()
 	err := buildSpec.Validate()
 	if err != nil {
 		return nil, err
 	}
+	goSpec, _ := json.Marshal(buildSpec.Go)
+	fmt.Printf("building with: %s\n", goSpec)
 	if err = s.packSourceIfNeeded(ctx, buildSpec); err != nil {
 		return nil, err
 	}
