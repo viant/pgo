@@ -10,10 +10,10 @@ import (
 
 // Runtime represents a go runtime
 type Runtime struct {
-	Arch            string
-	Os              string
-	Version         string
-	EnsureTheSameOs bool
+	Arch         string
+	Os           string
+	Version      string
+	UseContainer bool
 }
 
 // Init initialises plugin

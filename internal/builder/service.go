@@ -297,7 +297,7 @@ func (s *Service) ensureGo(ctx context.Context, snapshot *Snapshot, version stri
 }
 
 func (s *Service) delegateBuildOrFail(ctx context.Context, spec *build.Build, err error) (*build.Module, error) {
-	spec.Go.EnsureTheSameOs = false //do not propagate that flag down otherwise infinitive loop
+	spec.Go.UseContainer = false //do not propagate that flag down otherwise infinitive loop
 	delegation := s.cfg.delegations.Match(&spec.Go.Runtime)
 	if delegation == nil {
 		return nil, err

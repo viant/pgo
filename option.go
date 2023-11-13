@@ -10,22 +10,23 @@ import (
 
 // Options options
 type Options struct {
-	SourceURL   []string          `short:"s" long:"src" description:"plugin source project location"  `
-	DestURL     string            `short:"d" long:"dest" description:"plugin dest location"  `
-	Name        string            `short:"n" long:"name" description:"plugin name, default main"  `
-	Arch        string            `short:"a" long:"arch" description:"amd64|arm64"  `
-	Os          string            `short:"o" long:"os" description:"linux|darwin"  `
-	Version     string            `short:"v" long:"ver" description:"go version"  `
-	ModPath     string            `short:"m" long:"modpath" description:"go mod path"  `
-	MainPath    string            `short:"p" long:"mainpath" description:"main path in project"  `
-	BuildArgs   []string          `short:"b" long:"barg" description:"build args" `
-	LdFlags     string            `short:"f" long:"f" description:"ldflags" `
-	Env         map[string]string `short:"e" long:"env" description:"env variables" `
-	BuildMode   string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
-	Compression string            `short:"c" long:"compression" description:"compression codec" choice:"gzip"  `
-	WithLogger  bool              `short:"l" long:"log" description:"with debug logger" `
-	GoPath      string            `short:"p" long:"gopath" description:"go path" `
-	GoRoot      string            `short:"r" long:"goroot" description:"go root" `
+	SourceURL    []string          `short:"s" long:"src" description:"plugin source project location"  `
+	DestURL      string            `short:"d" long:"dest" description:"plugin dest location"  `
+	Name         string            `short:"n" long:"name" description:"plugin name, default main"  `
+	Arch         string            `short:"a" long:"arch" description:"amd64|arm64"  `
+	Os           string            `short:"o" long:"os" description:"linux|darwin"  `
+	Version      string            `short:"v" long:"ver" description:"go version"  `
+	ModPath      string            `short:"m" long:"modpath" description:"go mod path"  `
+	MainPath     string            `short:"p" long:"mainpath" description:"main path in project"  `
+	BuildArgs    []string          `short:"b" long:"barg" description:"build args" `
+	LdFlags      string            `short:"f" long:"f" description:"ldflags" `
+	Env          map[string]string `short:"e" long:"env" description:"env variables" `
+	BuildMode    string            `short:"b" long:"bmode" description:"build mode" choice:"exec" choice:"plugin" `
+	UseContainer bool              `short:"N" long:"container" description:"use container to ensure consistency" `
+	Compression  string            `short:"c" long:"compression" description:"compression codec" choice:"gzip"  `
+	WithLogger   bool              `short:"l" long:"log" description:"with debug logger" `
+	GoPath       string            `short:"p" long:"gopath" description:"go path" `
+	GoRoot       string            `short:"r" long:"goroot" description:"go root" `
 }
 
 // Validate check if option are valid
@@ -72,9 +73,7 @@ func (o *Options) buildSpec() *build.Build {
 	ret.Go.LdFlags = o.LdFlags
 	ret.Spec.MainPath = o.MainPath
 	ret.Mode = o.BuildMode
-	if o.Os == "linux" {
-		ret.Go.Runtime.EnsureTheSameOs = true
-	}
+	ret.Go.Runtime.UseContainer = o.UseContainer
 	return ret
 }
 
