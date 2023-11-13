@@ -40,7 +40,7 @@ func (s *Service) Build(ctx context.Context, buildSpec *build.Build, opts ...bui
 	if err = s.packSourceIfNeeded(ctx, buildSpec); err != nil {
 		return nil, err
 	}
-	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil || buildSpec.Go.EnsureTheSameOs {
+	if err := s.cfg.Runtime.ValidateOsAndArch(&buildSpec.Go.Runtime); err != nil || buildSpec.Go.UseContainer {
 		buildSpec.Go.Path = ""
 		buildSpec.Go.Root = ""
 		return s.delegateBuildOrFail(ctx, buildSpec, err)
