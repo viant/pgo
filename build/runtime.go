@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//Runtime represents a go runtime
+// Runtime represents a go runtime
 type Runtime struct {
 	Arch            string
 	Os              string
@@ -16,20 +16,30 @@ type Runtime struct {
 	EnsureTheSameOs bool
 }
 
-//Init initialises plugin
+// Init initialises plugin
 func (r *Runtime) Init() {
 	if r.Os == "" {
 		r.Os = runtime.GOOS
 	}
 	if r.Arch == "" {
-		r.Arch = runtime.GOARCH
+
+		cmd := exec.Command("uname", "-m")
+		if data, err := cmd.Output(); err == nil {
+			if strings.Contains(string(data), "x86") {
+				r.Arch = "amd64"
+			}
+		}
+		if r.Arch == "" {
+			r.Arch = runtime.GOARCH
+		}
+
 	}
 	if r.Version == "" {
 		r.Version = strings.Replace(runtime.Version(), "go", "", 1)
 	}
 }
 
-//DetectVersion detect runtime version or fallback to build go version in case of error
+// DetectVersion detect runtime version or fallback to build go version in case of error
 func (r *Runtime) DetectVersion() {
 	r.Init()
 	command := exec.Command("go", "version")
@@ -45,7 +55,7 @@ func (r *Runtime) DetectVersion() {
 	}
 }
 
-//ValidateOsAndArch checks if runtime os and arch is compatible
+// ValidateOsAndArch checks if runtime os and arch is compatible
 func (r *Runtime) ValidateOsAndArch(runtime *Runtime) error {
 	if r.Arch != runtime.Arch {
 		return fmt.Errorf("invalid plugin arch: expected: %v, but had: %v", r.Arch, runtime.Arch)
@@ -56,7 +66,7 @@ func (r *Runtime) ValidateOsAndArch(runtime *Runtime) error {
 	return nil
 }
 
-//Validate checks if runtime is compatible
+// Validate checks if runtime is compatible
 func (r *Runtime) Validate(runtime *Runtime) error {
 	if err := r.ValidateOsAndArch(runtime); err != nil {
 		return err
@@ -67,7 +77,7 @@ func (r *Runtime) Validate(runtime *Runtime) error {
 	return nil
 }
 
-//PluginName returns runtime specific plugin name
+// PluginName returns runtime specific plugin name
 func (r *Runtime) PluginName(name string) string {
 	if name == "" {
 		name = "main.so"
@@ -88,7 +98,7 @@ func (r *Runtime) PluginName(name string) string {
 	return ret
 }
 
-//PluginName returns runtime specific plugin name
+// PluginName returns runtime specific plugin name
 func (r *Runtime) InfoName(name string) string {
 	if name == "" {
 		name = "main.pinf"
@@ -100,7 +110,7 @@ func (r *Runtime) InfoName(name string) string {
 	return adjusted + "_" + strings.ReplaceAll(r.Version, ".", "_") + "_" + r.Os + "_" + r.Arch + ".pinf"
 }
 
-//NewRuntime creates a runtime
+// NewRuntime creates a runtime
 func NewRuntime() Runtime {
 	ret := Runtime{}
 	ret.Init()
