@@ -109,6 +109,9 @@ func (s *Service) replaceDependencies(reader io.ReadCloser, dest *modfile.File, 
 	if len(snapshot.Dependencies) == 0 {
 		return reader, nil
 	}
+	if dest == nil {
+		return reader, nil
+	}
 	replace := dest.Replace
 	if len(replace) == 0 {
 		return reader, nil
