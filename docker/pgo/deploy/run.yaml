@@ -23,6 +23,7 @@ pipeline:
 
   buildImage:
     action: docker:build
+    platform: linux/amd64
     path: ${appPath}/docker/pgo
     nocache: true
     tag:

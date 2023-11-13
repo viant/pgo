@@ -23,10 +23,10 @@ func (s *Service) runDocker(delegation *Delegation, buildSpec *build.Build) erro
 	}
 	stdout, err = s.runCommand(cmd, args, buildSpec)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start docker %s %v, %w", cmd, args, err)
 	}
 	if strings.Contains(strings.ToLower(stdout), "error") {
-		return fmt.Errorf(stdout)
+		return fmt.Errorf("failed to start docker %s %v, %v", cmd, args, stdout)
 	}
 	return nil
 }
