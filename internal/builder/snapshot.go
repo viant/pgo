@@ -133,6 +133,10 @@ func (s *Snapshot) setPluginBuildPath(loc string) {
 	if s.ModuleBuildPath != "" {
 		return
 	}
+	if path.IsAbs(s.Spec.MainPath) {
+		s.ModuleBuildPath = s.Spec.MainPath
+		return
+	}
 	if s.Spec.MainPath == "" {
 		s.ModuleBuildPath = path.Join(s.BaseModuleURL(), path.Dir(loc))
 		return
@@ -183,6 +187,9 @@ func (s *Snapshot) buildCmdArgs() (string, []string) {
 	)
 
 	mainPath := s.Spec.MainPath
+	if path.IsAbs(mainPath) && len(s.Mains) > 0 {
+		s.Mains[0] = mainPath
+	}
 	if s.BuildModPath == "" && len(s.Mains) > 0 {
 		args = append(args, s.Mains[0])
 	} else if s.ModuleBuildPath == "" && mainPath != "" {
